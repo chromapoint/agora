@@ -1056,7 +1056,7 @@ function App() {
       {mode==="home" && <HomepagePhase onSwitchMode={switchMode} format={format} />}
       <VibeWriterPhase callRelay={callRelay} onSwitchMode={switchMode} hidden={mode!=="vibe"} seed={vibeWriterSeed} onSeedConsumed={()=>setVibeWriterSeed(null)} treatment={treatment} refScripts={refScripts} />
       <CharactersPhase callRelay={callRelay} onSwitchMode={switchMode} hidden={mode!=="characters"} treatment={treatment} />
-      {mode==="beatbuilder" && <BeatBuilderPhase callRelay={callRelay} onSwitchMode={switchMode} />}
+      {mode==="beatbuilder" && <BeatBuilderPhase callRelay={callRelay} onSwitchMode={switchMode} refScripts={refScripts} />}
       {mode==="sweetener" && <SceneSweetenerPhase callRelay={callRelay} onSwitchMode={switchMode} treatment={treatment} refScripts={refScripts} />}
       {mode==="paradigms"   && <ParadigmsPhase onSwitchMode={switchMode} />}
       {mode==="archetypes"  && <ArchetypesPhase onSwitchMode={switchMode} />}
@@ -1590,6 +1590,26 @@ function ScriptLibraryModal({ refScripts, onRefScriptsChange, onClose, callRelay
         )}
 
         {err && <div style={{ color:"#1B4E7A", fontSize:12, marginBottom:12, padding:"8px 12px", background:"rgba(35,100,170,0.07)", borderRadius:12 }}>{err}</div>}
+
+        {/* Knowledge Base Loader */}
+        <div style={{ marginBottom:16, padding:"12px", background:"rgba(0,0,0,0.03)", borderRadius:12 }}>
+          <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.15em", color:FAINT, marginBottom:8, textTransform:"uppercase" }}>Quick Load</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {["poto-me-pipi-ep1-v2.1", "poto-me-pipi-ep2-v1.1", "poto-me-pipi-ep3-v1.6"].map(name => (
+              <button key={name} onClick={()=>{
+                setLoading(true);
+                fetch(`/knowledge-base/${name}.pdf`)
+                  .then(r=>r.arrayBuffer())
+                  .then(buf=>{ const b64=btoa(String.fromCharCode(...new Uint8Array(buf))); return callRelay("Extract the complete screenplay text from this PDF. Preserve all scene headings, character names, dialogue, parentheticals, and action lines exactly. Output only screenplay text — no commentary.", [{ type:"document", source:{ type:"base64", media_type:"application/pdf", data:b64 } }], 16000); })
+                  .then(text=>{ onRefScriptsChange(prev=>[...prev.filter(s=>s.name!==name), {name, text}]); })
+                  .catch(e=>setErr("Failed: "+e.message))
+                  .finally(()=>setLoading(false));
+              }} style={{ background:"#F5F5F5", border:"1px solid rgba(0,0,0,0.1)", borderRadius:8, padding:"8px 12px", cursor:"pointer", fontFamily:"'Courier Prime',monospace", fontSize:9, color:"#1C1B1F", textAlign:"left" }}>
+                + {name}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div
           onClick={()=>!loading && fileRef.current?.click()}
@@ -3226,7 +3246,7 @@ function CharactersPhase({ callRelay, onSwitchMode, hidden, treatment }) {
 }
 
 // ── Beat Builder: Outline Expander ──────────────────────────────────────
-function BeatBuilderPhase({ callRelay, onSwitchMode }) {
+function BeatBuilderPhase({ callRelay, onSwitchMode, refScripts }) {
   const [outline, setOutline] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -3240,7 +3260,8 @@ function BeatBuilderPhase({ callRelay, onSwitchMode }) {
     setError("");
     setExpanded("");
     try {
-      const systemPrompt = `Expand the outline into rich narrative. Keep all beats. Add sensory detail, dialogue, character moments. Use British English, prose not screenplay. End with blank line then "END".`;
+      let systemPrompt = `Expand the outline into rich narrative. Keep all beats. Add sensory detail, dialogue, character moments. Use British English, prose not screenplay. End with blank line then "END".`;
+      if (refScripts && refScripts.length > 0) systemPrompt += `\n\nREFERENCE SCRIPTS:\n${refScripts.map(s=>`--- ${s.name} ---\n${s.text.slice(0,5000)}`).join("\n\n")}\n\nMatch the style, tone, and voice of the reference scripts.`;
 
       const userMsg = `Expand this outline into a detailed, vivid scene narrative with dialogue and action:\n\n${outline}`;
 
