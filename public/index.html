@@ -3284,19 +3284,23 @@ function BeatBuilderPhase({ callRelay, onSwitchMode, refScripts }) {
     setError("");
     setExpanded("");
     try {
-      let systemPrompt = `Expand the outline into rich narrative. Keep all beats. Add sensory detail, dialogue, character moments. Use British English, prose not screenplay.
+      let systemPrompt = `Expand the outline into rich narrative. Keep all beats. Use British English, prose not screenplay.
 
-CRITICAL: You MUST complete the entire narrative arc from beginning to end. Do not stop mid-sentence or mid-scene. If you're approaching the token limit, prioritize finishing the story over additional elaboration. Every scene must have closure. End with blank line then "END".`;
-      if (refScripts && refScripts.length > 0) systemPrompt += `\n\nREFERENCE SCRIPTS:\n${refScripts.map(s=>`--- ${s.name} ---\n${s.text.slice(0,5000)}`).join("\n\n")}\n\nMatch the style, tone, and voice of the reference scripts.`;
+CRITICAL RULES:
+1. You MUST complete the entire narrative from start to finish. No mid-sentence cutoffs.
+2. As you reach the resolution of the story, begin wrapping up. Don't extend past the natural conclusion.
+3. Each beat should be vivid but concise. Prioritize story completion over maximum elaboration.
+4. End with blank line then "END".`;
+      if (refScripts && refScripts.length > 0) systemPrompt += `\n\nREFERENCE SCRIPTS:\n${refScripts.map(s=>`--- ${s.name} ---\n${s.text.slice(0,4000)}`).join("\n\n")}\n\nCapture the style and tone of the reference scripts.`;
 
-      const userMsg = `Expand this outline into a detailed, vivid scene narrative with dialogue and action:\n\n${outline}`;
+      const userMsg = `Expand this outline into a complete scene narrative:\n\n${outline}`;
 
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
-          max_tokens: 50000,
+          max_tokens: 70000,
           temperature: 0.7,
           stream: true,
           system: systemPrompt,
