@@ -1028,6 +1028,30 @@ function App() {
     if (format === "kids") el.classList.add("kids"); else el.classList.remove("kids");
   }, [format]);
 
+  // Auto-load Pipi and Poto reference scripts on startup
+  useEffect(() => {
+    const loadKnowledgeBase = async () => {
+      const scripts = ["poto-me-pipi-ep1-v2.1", "poto-me-pipi-ep2-v1.1", "poto-me-pipi-ep3-v1.6"];
+      const loaded = [];
+      for (const name of scripts) {
+        try {
+          const res = await fetch(`/knowledge-base/${name}.pdf`);
+          if (!res.ok) continue;
+          const buf = await res.arrayBuffer();
+          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          const text = await callRelay(
+            "Extract the complete screenplay text from this PDF. Preserve all scene headings, character names, dialogue, parentheticals, and action lines exactly. Output only screenplay text — no commentary.",
+            [{ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } }],
+            16000
+          );
+          if (text) loaded.push({ name, text });
+        } catch(e) { console.warn(`Failed to load ${name}:`, e.message); }
+      }
+      if (loaded.length > 0) setRefScripts(loaded);
+    };
+    loadKnowledgeBase();
+  }, []);
+
   // ── API relay (calls /api/claude — key never touches the browser) ─
   async function callRelay(system, userMsg, maxTokens=2000, model="claude-sonnet-4-6") {
     // Every tool inherits the active writing format — feature vs preschool TV
