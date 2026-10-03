@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fountain Editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body { background: #030712; }
+    .ef { font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.65; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useMemo, useCallback } = React;
+
+// ── Fountain Parser ────────────────────────────────────────────────────────────
+
+const SCENE_RE    = /^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.|I\/E)\b/i;
+const SECTION_RE  = /^#{1,6} /;
+const TRANS_RE    = /^(FADE (OUT|IN|TO BLACK)|CUT TO:|SMASH CUT TO:|MATCH CUT TO:|DISSOLVE TO:|WIPE TO:|INTERCUT WITH:)/i;
+const CHAR_RE     = /^[A-Z][A-Z0-9 '\-\.]*(\s*\(.*?\))?\s*$/;
+const PAREN_RE    = /^\s*\(.*?\)\s*$/;
+
+function parseFountain(text) {
+  const lines = text.split('\n');
+  const out = [];
+  let prev = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const t   = raw.trim();
+
+    if (!t) {
+      out.push({ type: 'empty', text: raw, trimmed: '' });
+      prev = 'empty';
+      continue;
+    }
+
+    let type;
+
+    if (SECTION_RE.test(t)) {
+      type = 'section';
+    } else if (SCENE_RE.test(t) || (t.startsWith('.') && !t.startsWith('..'))) {
+      type = 'scene';
+    } else if (TRANS_RE.test(t)) {
+      type = 'transition';
+    } else if ((prev === 'character' || prev === 'parenthetical' || prev === 'dialogue') && PAREN_RE.test(t)) {
+      type = 'parenthetical';
+    } else if (prev === 'character' || prev === 'parenthetical' || prev === 'dialogue') {
+      type = 'dialogue';
+    } else if ((prev === 'empty' || prev === null) && CHAR_RE.test(t) && !SCENE_RE.test(t)) {
+      type = 'character';
+    } else {
+      type = 'action';
+    }
+
+    out.push({ type, text: raw, trimmed: t });
+    prev = type;
+  }
+
+  return out;
+}
+
+// ── Page Estimator ─────────────────────────────────────────────────────────────
+
+const LINES_PER_PAGE = 55;
+
+function linesFor(el) {
+  if (!el.trimmed) return 0.5;
+  switch (el.type) {
+    case 'scene':         return Math.ceil(el.trimmed.length / 60) + 0.5;
+    case 'action':        return Math.ceil(el.trimmed.length / 60) || 1;
+    case 'character':     return 1;
+    case 'dialogue':      return Math.ceil(el.trimmed.length / 35) || 1;
+    case 'parenthetical': return 1;
+    case 'transition':    return 1;
+    case 'section':       return 0;
+    default:              return 0.5;
+  }
+}
+
+function estimatePages(elements) {
+  let cum = 0;
+  const annotated = elements.map(el => {
+    cum += linesFor(el);
+    return { ...el, cumLines: cum };
+  });
+  return { annotated, totalPages: cum / LINES_PER_PAGE };
+}
+
+// ── Act Splitter ───────────────────────────────────────────────────────────────
+
+function splitActs(annotated, totalPages) {
+  let a2 = -1, a3 = -1;
+  for (let i = 0; i < annotated.length; i++) {
+    if (annotated[i].type !== 'section') continue;
+    const u = annotated[i].trimmed.toUpperCase();
+    if (a2 === -1 && (u.includes('ACT TWO') || u.includes('ACT 2') || u.includes('ACT II')))   a2 = i;
+    if (a3 === -1 && (u.includes('ACT THREE') || u.includes('ACT 3') || u.includes('ACT III'))) a3 = i;
+  }
+
+  const pageAt = idx => idx >= 0 ? annotated[idx].cumLines / LINES_PER_PAGE : 0;
+
+  const p2 = pageAt(a2);
+  const p3 = pageAt(a3);
+
+  return {
+    act1:    a2 > -1 ? p2 : totalPages,
+    act2:    a2 > -1 ? (a3 > -1 ? p3 - p2 : totalPages - p2) : 0,
+    act3:    a3 > -1 ? totalPages - p3 : 0,
+    hasAct2: a2 > -1,
+    hasAct3: a3 > -1,
+  };
+}
+
+// ── Syntax Highlighting ────────────────────────────────────────────────────────
+
+const STYLE = {
+  scene:         'color:#fcd34d;font-weight:700;',
+  action:        'color:#d1d5db;',
+  character:     'color:#f9fafb;font-weight:600;',
+  dialogue:      'color:#e5e7eb;',
+  parenthetical: 'color:#9ca3af;font-style:italic;',
+  transition:    'color:#6b7280;',
+  section:       'color:#a78bfa;font-weight:700;',
+  empty:         'color:transparent;',
+};
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function highlight(elements) {
+  return elements.map(el => {
+    const s = STYLE[el.type] || STYLE.action;
+    const t = esc(el.text) || '​';
+    return `<span style="${s}">${t}</span>`;
+  }).join('\n');
+}
+
+// ── Act Budget Bar ─────────────────────────────────────────────────────────────
+
+function ActBar({ label, pages, target, active }) {
+  const pct  = Math.min((pages / target) * 100, 100);
+  const over = pages > target;
+  const warn = !over && pages > target - 5;
+
+  const barCls = over ? 'bg-red-500' : warn ? 'bg-yellow-400' : 'bg-sky-500';
+  const numCls = over ? 'text-red-400' : warn ? 'text-yellow-400' : 'text-gray-400';
+
+  return (
+    <div className="flex-1 min-w-0" style={{ opacity: active ? 1 : 0.25 }}>
+      <div className="flex justify-between items-baseline mb-1">
+        <span className="text-gray-500 text-xs font-mono tracking-wider">{label}</span>
+        <span className={`text-xs font-mono ${numCls}`}>
+          {pages.toFixed(1)}<span className="text-gray-700">/{target}pp</span>
+        </span>
+      </div>
+      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-150 ${barCls}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Sample Script ──────────────────────────────────────────────────────────────
+
+const SAMPLE = `FADE IN:
+
+# ACT ONE
+
+EXT. WAITITI FARM - DAWN
+
+Mist sits low over the paddocks. A rusted ute idles at the gate.
+
+HANA (30s, a stillness to her that reads as either calm or grief) steps out and surveys the land her grandmother left her. She pulls a letter from her coat pocket. Reads it again.
+
+HANA
+(under her breath)
+They want to buy it.
+
+She folds the letter. Looks at the hills.
+
+HANA (CONT'D)
+Over my dead body.
+
+INT. AUCKLAND LAW FIRM - DAY
+
+Glass and marble. DEVELOPERS in suits. Hana walks in wearing muddy boots.
+
+SOLICITOR
+Ms Waititi. Thank you for coming.
+
+She doesn't sit.
+
+# ACT TWO
+
+EXT. FARMLAND - VARIOUS - DAY
+
+Hana walks the boundary fence. Every post. Every wire.
+
+HANA (V.O.)
+My grandmother knew every stone on this land by name.
+
+# ACT THREE
+
+EXT. WAITITI FARM - SUNSET
+
+Hana stands where she stood at the beginning. The mist is gone.
+
+FADE OUT.`;
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+
+function FountainEditor() {
+  const [script, setScript] = useState(SAMPLE);
+  const taRef  = useRef(null);
+  const preRef = useRef(null);
+
+  const elements                   = useMemo(() => parseFountain(script),              [script]);
+  const { annotated, totalPages }  = useMemo(() => estimatePages(elements),            [elements]);
+  const acts                       = useMemo(() => splitActs(annotated, totalPages),   [annotated, totalPages]);
+  const html                       = useMemo(() => highlight(annotated),               [annotated]);
+
+  const onScroll = useCallback(() => {
+    if (preRef.current && taRef.current) preRef.current.scrollTop = taRef.current.scrollTop;
+  }, []);
+
+  return (
+    <div style={{ height:'100%', background:'#030712', display:'flex', flexDirection:'column', overflow:'hidden', color:'white' }}>
+
+      {/* ── Header bar ── */}
+      <div style={{ flexShrink:0, padding:'10px 24px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:24, background:'#030712' }}>
+        <span style={{ fontFamily:'monospace', fontSize:10, letterSpacing:'0.2em', textTransform:'uppercase', color:'#4b5563' }}>Fountain</span>
+        <span style={{ fontFamily:'monospace', fontSize:11, color:'#6b7280' }}>{totalPages.toFixed(1)} pp</span>
+        <div style={{ display:'flex', gap:20, flex:1, maxWidth:500, marginLeft:'auto' }}>
+          <ActBar label="Act I"   pages={acts.act1} target={30} active={true} />
+          <ActBar label="Act II"  pages={acts.act2} target={60} active={acts.hasAct2} />
+          <ActBar label="Act III" pages={acts.act3} target={20} active={acts.hasAct3} />
+        </div>
+      </div>
+
+      {/* ── Editor ── */}
+      <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
+        {/* Highlight overlay — sits behind textarea */}
+        <pre
+          ref={preRef}
+          aria-hidden="true"
+          className="ef"
+          style={{
+            position:'absolute', inset:0, overflow:'hidden',
+            padding:'32px 48px', whiteSpace:'pre-wrap', wordBreak:'break-word',
+            pointerEvents:'none', userSelect:'none', margin:0,
+          }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        {/* Editable textarea — transparent text, visible caret */}
+        <textarea
+          ref={taRef}
+          value={script}
+          onChange={e => setScript(e.target.value)}
+          onScroll={onScroll}
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
+          className="ef"
+          style={{
+            position:'absolute', inset:0, width:'100%', height:'100%',
+            padding:'32px 48px', background:'transparent',
+            color:'transparent', caretColor:'#f9fafb', WebkitTextFillColor:'transparent',
+            resize:'none', outline:'none', border:'none', overflow:'auto',
+          }}
+        />
+      </div>
+
+      {/* ── Legend ── */}
+      <div style={{ flexShrink:0, padding:'8px 24px', borderTop:'1px solid rgba(255,255,255,0.06)', background:'#030712', display:'flex', alignItems:'center', gap:20, flexWrap:'wrap' }}>
+        {[
+          ['Scene',         '#fcd34d'],
+          ['Action',        '#d1d5db'],
+          ['Character',     '#f9fafb'],
+          ['Dialogue',      '#e5e7eb'],
+          ['Parenthetical', '#9ca3af'],
+          ['Section',       '#a78bfa'],
+        ].map(([label, color]) => (
+          <div key={label} style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ width:7, height:7, borderRadius:'50%', background:color, flexShrink:0 }} />
+            <span style={{ fontFamily:'monospace', fontSize:10, color:'#4b5563' }}>{label}</span>
+          </div>
+        ))}
+        <span style={{ marginLeft:'auto', fontFamily:'monospace', fontSize:10, color:'#374151' }}>
+          # ACT TWO · # ACT THREE to split acts
+        </span>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<FountainEditor />);
+</script>
+</body>
+</html>

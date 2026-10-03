@@ -1,0 +1,13 @@
+{
+  "name": "story-forge",
+  "version": "2.0.0",
+  "description": "HartChart to Story Compass documents",
+  "private": true,
+  "dependencies": {
+    "docx": "^9.7.1",
+    "node-fetch": "^3.3.2"
+  },
+  "scripts": {
+    "deploy": "vercel --prod"
+  }
+}

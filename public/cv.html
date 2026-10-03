@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CV Builder — Agora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Mono:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F0EDE6; --bg2:#E6E1D8; --bg3:#DDD8CE;
+  --text:#1A1410; --muted:#6B6056; --faint:#8A7B6E;
+  --rust:#B5451B; --line:rgba(0,0,0,0.1);
+}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+textarea,input{background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:10px 12px;outline:none;width:100%;transition:border-color 0.15s;resize:vertical;}
+textarea::placeholder,input::placeholder{color:var(--faint);}
+textarea:focus,input:focus{border-color:rgba(0,0,0,0.3);}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:2px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+/* ── Layout ── */
+.shell{display:flex;height:100vh;}
+
+/* ── Editor panel ── */
+.editor{width:380px;min-width:320px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;}
+.editor-top{padding:20px 20px 0;flex-shrink:0;}
+.editor-scroll{flex:1;overflow-y:auto;padding:16px 20px 24px;}
+.editor-footer{padding:16px 20px;border-top:1px solid var(--line);flex-shrink:0;}
+
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:18px;transition:color 0.15s;}
+.back-link:hover{color:var(--text);}
+.back-link svg{width:12px;height:12px;}
+
+.editor-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;font-style:italic;color:var(--rust);margin-bottom:20px;}
+
+.field{margin-bottom:16px;}
+.field-label{display:block;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.field textarea{line-height:1.55;}
+.profile-area{height:340px;line-height:1.6;font-size:12.5px;}
+.jd-area{height:160px;}
+
+.section-divider{height:1px;background:var(--line);margin:4px 0 16px;}
+
+.generate-btn{width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:4px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;letter-spacing:0.04em;cursor:pointer;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.generate-btn:hover{opacity:0.85;}
+.generate-btn:disabled{opacity:0.45;cursor:not-allowed;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+
+/* ── Preview panel ── */
+.preview{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.preview-topbar{padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);flex-shrink:0;}
+.preview-label{font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.preview-actions{display:flex;gap:8px;}
+.icon-btn{padding:6px 14px;border:1px solid var(--line);background:transparent;border-radius:3px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:all 0.15s;}
+.icon-btn:hover{border-color:rgba(0,0,0,0.3);color:var(--text);}
+.preview-scroll{flex:1;overflow-y:auto;padding:32px 24px 48px;display:flex;justify-content:center;}
+
+/* ── Empty state ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--faint);}
+.empty-state svg{opacity:0.25;}
+.empty-state p{font-size:13px;color:var(--faint);letter-spacing:0.02em;}
+
+/* ── CV Document ── */
+.cv-doc{background:#fff;width:100%;max-width:740px;padding:52px 60px;box-shadow:0 2px 24px rgba(0,0,0,0.08),0 0 0 1px rgba(0,0,0,0.05);animation:fadeIn 0.3s ease both;font-family:'Inter',sans-serif;color:#111;}
+.cv-name{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:400;line-height:1.1;letter-spacing:-0.01em;color:#111;margin-bottom:4px;}
+.cv-tagline{font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#B5451B;margin-bottom:12px;}
+.cv-contact{display:flex;flex-wrap:wrap;gap:4px 20px;font-size:11.5px;color:#555;border-bottom:1.5px solid #111;padding-bottom:14px;margin-bottom:22px;}
+.cv-contact span{display:flex;align-items:center;gap:5px;}
+
+.cv-section{margin-bottom:22px;}
+.cv-section-title{font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#B5451B;margin-bottom:10px;}
+
+.cv-summary{font-size:13px;line-height:1.65;color:#222;}
+
+.cv-job{margin-bottom:16px;}
+.cv-job:last-child{margin-bottom:0;}
+.cv-job-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+.cv-job-company{font-size:13.5px;font-weight:600;color:#111;}
+.cv-job-period{font-size:11.5px;color:#666;white-space:nowrap;margin-left:12px;}
+.cv-job-role{font-size:12.5px;color:#444;margin-bottom:6px;}
+.cv-job-role em{font-style:italic;color:#777;font-size:11.5px;}
+.cv-highlights{list-style:none;padding:0;}
+.cv-highlights li{font-size:12.5px;line-height:1.6;color:#333;padding-left:14px;position:relative;margin-bottom:3px;}
+.cv-highlights li::before{content:"–";position:absolute;left:0;color:#B5451B;}
+
+.cv-edu-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.cv-edu-inst{font-size:13px;font-weight:600;color:#111;}
+.cv-edu-year{font-size:11.5px;color:#666;}
+.cv-edu-qual{font-size:12.5px;color:#444;}
+
+.cv-skills{display:flex;flex-wrap:wrap;gap:6px 0;}
+.cv-skill-item{font-size:12px;color:#333;padding-right:16px;position:relative;}
+.cv-skill-item:not(:last-child)::after{content:"·";position:absolute;right:6px;color:#999;}
+
+.cv-additional{font-size:12.5px;color:#444;line-height:1.6;font-style:italic;}
+
+/* ── Print ── */
+/* @page at root level — applies only to print output */
+@page{margin:0;size:A4 portrait;}
+
+.print-pagenum{display:none;}
+
+@media print{
+  .editor,.preview-topbar{display:none!important;}
+  .preview,.shell{display:block!important;height:auto!important;}
+  .preview-scroll{padding:0!important;overflow:visible!important;display:block!important;}
+  .cv-doc{box-shadow:none!important;max-width:100%!important;width:100%!important;padding:18mm 20mm 20mm!important;}
+  body,html{overflow:visible!important;height:auto!important;}
+  /* page number — fixed position repeats on every page */
+  .print-pagenum{
+    display:block;
+    position:fixed;
+    bottom:7mm;
+    right:20mm;
+    font-family:'Inter',sans-serif;
+    font-size:9px;
+    color:#bbb;
+    letter-spacing:0.06em;
+  }
+  .print-pagenum::before{content:counter(page);}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+const STORAGE_KEY = "agora-cv-profile";
+
+const SYS_PROMPT = `You are a professional CV writer specialising in tailored applications. Given a master profile and a specific job description, write a polished, targeted CV.
+
+Return ONLY valid JSON — no markdown fences, no explanation, no commentary. Raw JSON only.
+
+Use exactly this structure:
+{
+  "name": "Full name",
+  "tagline": "Job title, matched to the role applied for",
+  "contact": {
+    "email": "email address",
+    "phone": "phone number",
+    "location": "City, Country",
+    "linkedin": "LinkedIn URL or username (omit key if not provided)",
+    "website": "website URL (omit key if not provided)"
+  },
+  "summary": "2–3 sentence professional summary written specifically for this role. Speak directly to what the employer needs.",
+  "experience": [
+    {
+      "company": "Company name",
+      "role": "Job title",
+      "period": "Month Year – Month Year (or Present)",
+      "location": "City (optional — omit key if unknown)",
+      "highlights": [
+        "Achievement or responsibility, leading with a strong action verb. Quantify impact wherever the profile supports it."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "School or university",
+      "qualification": "Degree, diploma, or certificate",
+      "year": "Year or year range"
+    }
+  ],
+  "skills": ["Skill 1", "Skill 2"],
+  "additional": "Awards, memberships, languages, or other relevant items as a short sentence or two. Omit this key entirely if nothing applies."
+}
+
+Rules:
+- Tailor summary and highlighted achievements to the job description
+- Select and order experience to be most relevant to the role
+- Lead every highlight with an action verb (Directed, Delivered, Managed, Supervised, etc.)
+- Keep skills to the 8–12 most relevant
+- Do not invent anything not present in the master profile
+- Return raw JSON only`;
+
+async function callRelay(system, userMsg, maxTokens = 3000) {
+  const res = await fetch("/api/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userMsg }],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "API error");
+  return data.content?.[0]?.text ?? "";
+}
+
+function parseCV(raw) {
+  const text = raw.trim();
+  // strip markdown fences if Claude includes them anyway
+  const clean = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  return JSON.parse(clean);
+}
+
+function CVDocument({ cv }) {
+  return (
+    <div className="cv-doc">
+      <div className="cv-name">{cv.name}</div>
+      {cv.tagline && <div className="cv-tagline">{cv.tagline}</div>}
+      <div className="cv-contact">
+        {cv.contact?.email && <span>{cv.contact.email}</span>}
+        {cv.contact?.phone && <span>{cv.contact.phone}</span>}
+        {cv.contact?.location && <span>{cv.contact.location}</span>}
+        {cv.contact?.linkedin && <span>{cv.contact.linkedin}</span>}
+        {cv.contact?.website && <span>{cv.contact.website}</span>}
+      </div>
+
+      {cv.summary && (
+        <div className="cv-section">
+          <div className="cv-section-title">Profile</div>
+          <div className="cv-summary">{cv.summary}</div>
+        </div>
+      )}
+
+      {cv.experience?.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Experience</div>
+          {cv.experience.map((job, i) => (
+            <div className="cv-job" key={i}>
+              <div className="cv-job-header">
+                <span className="cv-job-company">{job.company}</span>
+                <span className="cv-job-period">{job.period}</span>
+              </div>
+              <div className="cv-job-role">
+                {job.role}
+                {job.location ? <em> · {job.location}</em> : null}
+              </div>
+              {job.highlights?.length > 0 && (
+                <ul className="cv-highlights">
+                  {job.highlights.map((h, j) => <li key={j}>{h}</li>)}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {cv.education?.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Education</div>
+          {cv.education.map((edu, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <div className="cv-edu-row">
+                <span className="cv-edu-inst">{edu.institution}</span>
+                <span className="cv-edu-year">{edu.year}</span>
+              </div>
+              <div className="cv-edu-qual">{edu.qualification}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {cv.skills?.length > 0 && (
+        <div className="cv-section">
+          <div className="cv-section-title">Skills</div>
+          <div className="cv-skills">
+            {cv.skills.map((s, i) => (
+              <span className="cv-skill-item" key={i}>{s}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {cv.additional && (
+        <div className="cv-section">
+          <div className="cv-section-title">Additional</div>
+          <div className="cv-additional">{cv.additional}</div>
+        </div>
+      )}
+
+      <div className="print-pagenum"/>
+    </div>
+  );
+}
+
+function App() {
+  const [profile, setProfile] = useState(() => localStorage.getItem(STORAGE_KEY) || "");
+  const [jd, setJd] = useState("");
+  const [cv, setCv] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // persist profile
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, profile); }, [profile]);
+
+  async function generate() {
+    if (!profile.trim()) { setError("Add your master profile first."); return; }
+    if (!jd.trim()) { setError("Paste a job description."); return; }
+    setError("");
+    setLoading(true);
+    try {
+      const userMsg = `Master Profile:\n${profile}\n\n---\n\nJob Description:\n${jd}`;
+      const raw = await callRelay(SYS_PROMPT, userMsg, 3000);
+      const parsed = parseCV(raw);
+      setCv(parsed);
+    } catch (e) {
+      setError("Generation failed: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="shell">
+      {/* ── Editor ── */}
+      <div className="editor">
+        <div className="editor-top">
+          <a href="/" className="back-link">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M8 2L4 6l4 4"/>
+            </svg>
+            Agora
+          </a>
+          <div className="editor-title">CV Builder</div>
+        </div>
+        <div className="editor-scroll">
+          <div className="field">
+            <label className="field-label">Master Profile</label>
+            <textarea
+              className="profile-area"
+              value={profile}
+              onChange={e => setProfile(e.target.value)}
+              placeholder={"Paste everything about yourself here — name, contact details, all your work experience (companies, roles, dates, achievements), education, skills, and anything else relevant. This is your permanent master record. The more detail you add, the better the output.\n\nExample structure:\nNAME: ...\nEMAIL: ...\nPHONE: ...\nLOCATION: ...\n\nEXPERIENCE\nCompany — Role (Month Year – Month Year)\n- Achievement\n- Achievement\n\nEDUCATION\nInstitution — Qualification (Year)\n\nSKILLS\n..."}
+            />
+            <div style={{ fontSize:10, color:"var(--faint)", marginTop:5, letterSpacing:"0.03em" }}>
+              Saved automatically. Update any time.
+            </div>
+          </div>
+
+          <div className="section-divider"/>
+
+          <div className="field">
+            <label className="field-label">Job Description</label>
+            <textarea
+              className="jd-area"
+              value={jd}
+              onChange={e => setJd(e.target.value)}
+              placeholder="Paste the full job description here. Include the job title, requirements, responsibilities — the more context the better."
+            />
+          </div>
+
+          {error && (
+            <div style={{ fontSize:12, color:"#c0392b", marginTop:-4, marginBottom:8 }}>{error}</div>
+          )}
+        </div>
+        <div className="editor-footer">
+          <button className="generate-btn" onClick={generate} disabled={loading}>
+            {loading && <span className="spinner"/>}
+            {loading ? "Building CV…" : cv ? "Regenerate CV" : "Generate CV"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Preview ── */}
+      <div className="preview">
+        <div className="preview-topbar">
+          <span className="preview-label">Preview</span>
+          {cv && (
+            <div className="preview-actions">
+              <button className="icon-btn" onClick={() => {
+                const t = document.title;
+                document.title = '​';
+                window.print();
+                setTimeout(() => { document.title = t; }, 500);
+              }}>Print / Save PDF</button>
+            </div>
+          )}
+        </div>
+        <div className="preview-scroll">
+          {!cv ? (
+            <div className="empty-state">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="10" y="6" width="28" height="36" rx="2"/>
+                <line x1="16" y1="16" x2="32" y2="16"/>
+                <line x1="16" y1="22" x2="32" y2="22"/>
+                <line x1="16" y1="28" x2="26" y2="28"/>
+              </svg>
+              <p>Your CV will appear here</p>
+            </div>
+          ) : (
+            <CVDocument cv={cv} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

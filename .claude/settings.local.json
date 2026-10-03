@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vercel inspect *)",
+      "Bash(vercel --version)",
+      "Skill(claude-api)",
+      "Bash(/opt/homebrew/bin/brew install *)",
+      "Bash(python3 *)",
+      "Bash(vercel logs *)",
+      "Bash(vercel *)",
+      "Bash(pdftotext \"/Users/allangeorge/Desktop/HCToolkit.pdf\" -)",
+      "Bash(grep *)",
+      "Bash(brew install *)",
+      "Bash(pip3 install *)",
+      "Bash(curl -s https://agora-site-orcin.vercel.app)",
+      "Bash(node -e ' *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Read(//private/tmp/**)",
+      "Bash(npm install *)",
+      "Bash(sudo npm install -g @babel/standalone @babel/core @babel/preset-react)",
+      "Bash(mdimport -d2 \"/Users/allangeorge/Desktop/Writing Projects/_ANCESTRAL_FUSION/_STORY/_TREATMENT/Ancestral Fusion - Treatment v3_260612.pdf\")"
+    ]
+  }
+}
