@@ -2,9 +2,18 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
+    { "source": "/idea-lab", "destination": "/idea-lab.html" },
     { "source": "/cv", "destination": "/cv.html" },
     { "source": "/blockout", "destination": "/blockout.html" },
     { "source": "/argyle/:slug", "destination": "/argyle/:slug.html" }
+  ],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
   ],
   "functions": {
     "api/*.js": {
