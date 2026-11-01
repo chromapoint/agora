@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Idea Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Nunito:wght@400;500;600;700;800&family=Courier+Prime:wght@400;700&display=swap">
+<style>
+/* Layout: two-pane studio. Left: header band, intent card, conversation. Right: a top-to-bottom flow (Intent → Bubbles → Combine → Logline) joined by arrows. Single light look by design: Agora aqua and blue with Claude Code Club ink outlines and hard shadows. */
+:root{
+  --paper:#E9F3F1; --band:#D3EBE6; --card:#FFFFFF; --tint:#C4E4DF; --ink:#1C1B1F; --muted:#5D6B69;
+  --blue:#3FA3DB; --blue-soft:#DCEFFA; --mustard:#E9BC4C; --orange:#E5762C; --yes:#3FA45B; --no:#D2412F;
+  --display:"Unbounded","Arial Black",ui-sans-serif,system-ui,sans-serif;
+  --body:"Nunito",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Courier Prime","Courier New",ui-monospace,monospace;
+  --b:2.5px solid var(--ink); --sh:6px 6px 0 var(--ink); --sh-sm:4px 4px 0 var(--ink);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.55;
+  background-image:radial-gradient(color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1.2px);background-size:7px 7px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;letter-spacing:-.02em;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.label{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.hint{color:var(--muted);font-size:13.5px}
+
+.btn{border:var(--b);background:var(--card);border-radius:999px;padding:8px 18px;cursor:pointer;font-weight:700;font-size:14.5px;box-shadow:var(--sh-sm);transition:transform .08s,box-shadow .08s}
+.btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}
+.btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.blue{background:var(--blue)}
+.btn.mustard{background:var(--mustard)}
+.btn.flat{box-shadow:none;border-color:transparent;background:transparent;color:var(--muted);padding:6px 10px}
+.btn.flat:hover:not(:disabled){transform:none;box-shadow:none;color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+
+.app{height:100%;display:grid;grid-template-columns:minmax(0,46fr) minmax(0,54fr);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+@media (max-width:860px){.app{grid-template-columns:1fr;height:auto}.pane.left{height:88vh}.pane.right{overflow:visible!important}}
+.pane{min-height:0;min-width:0}
+
+/* left */
+.pane.left{display:flex;flex-direction:column;border-right:var(--b)}
+.band{background:var(--band);border-bottom:var(--b);padding:16px 18px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:50px;height:50px;border:var(--b);border-radius:12px;background:var(--blue);box-shadow:var(--sh-sm);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:18px;flex:0 0 auto}
+.brand h1{font-size:26px;font-weight:800}
+.brand p{margin:0;color:var(--muted);font-size:14px}
+.intent{margin:16px 18px 6px;background:var(--card);border:var(--b);border-radius:22px;box-shadow:var(--sh);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.intent-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ages{display:flex;gap:8px;flex-wrap:wrap}
+.age{border:var(--b);background:var(--card);border-radius:999px;padding:4px 14px;cursor:pointer;font-weight:700;font-size:14px}
+.age small{font-family:var(--mono);font-weight:400;font-size:12px;margin-left:4px;color:var(--muted)}
+.age[aria-pressed="true"]{background:var(--blue)}
+.age[aria-pressed="true"] small{color:var(--ink)}
+.intent textarea{width:100%;min-height:48px;max-height:130px;resize:vertical;border:2px solid var(--ink);border-radius:12px;padding:9px 12px;background:var(--paper);font-size:14.5px}
+.chat{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.msg{max-width:94%;white-space:pre-wrap;line-height:1.6}
+.msg.agent .who{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.14em;color:var(--blue);margin-bottom:2px}
+.msg.agent{align-self:flex-start;background:var(--card);border:2px solid var(--ink);border-radius:4px 18px 18px 18px;padding:10px 14px}
+.msg.you{align-self:flex-end;background:var(--blue-soft);border:2px solid var(--ink);border-radius:18px 4px 18px 18px;padding:9px 14px}
+.msg.thinking{color:var(--muted);font-style:italic}
+.msg ::selection,.msg::selection{background:var(--mustard)}
+.tip{font-family:var(--mono);font-size:12.5px;color:var(--muted);text-align:center;padding:0 18px 8px}
+.compose{display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px));border-top:var(--b);background:var(--band)}
+.compose textarea{flex:1;min-height:46px;max-height:160px;resize:none;border:var(--b);border-radius:16px;padding:11px 14px;background:var(--card)}
+.float-send{position:fixed;z-index:30;background:var(--mustard);border:var(--b);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--sh-sm)}
+
+/* right: the flow */
+.pane.right{overflow-y:auto;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 18px}
+.flow{display:flex;flex-direction:column;align-items:stretch;max-width:640px;margin:0 auto}
+.step{background:var(--card);border:var(--b);border-radius:24px;box-shadow:var(--sh);padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.step-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.step-head h2{font-size:21px;font-weight:800}
+.step-head .label{color:var(--muted);font-size:12px;display:block;margin-bottom:3px}
+.state{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase}
+.dot{width:30px;height:30px;border-radius:50%;border:var(--b);display:grid;place-items:center;font-family:var(--body);font-size:15px;line-height:1;color:#fff}
+.state.yes{color:var(--yes)}.state.yes .dot{background:var(--yes)}
+.state.no{color:var(--no)}.state.no .dot{background:var(--no)}
+.arrow{display:flex;justify-content:center;padding:10px 0}
+.arrow svg{width:34px;height:40px}
+.summary{margin:0;font-size:14.5px}
+.summary b{font-weight:700}
+
+.field{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-content:flex-start;padding:10px 4px 6px;min-height:150px;background:var(--paper);border:2px dashed color-mix(in srgb,var(--ink) 30%,transparent);border-radius:16px;
+  background-image:radial-gradient(color-mix(in srgb,var(--ink) 10%,transparent) 1px,transparent 1.2px);background-size:7px 7px}
+.bub{position:relative;border-radius:50%;border:var(--b);background:var(--card);box-shadow:var(--sh-sm);display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;cursor:pointer;line-height:1.22;font-weight:500;flex:0 0 auto;margin:6px}
+.bub span{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6}
+.bub.combined{background:var(--mustard);font-family:var(--display);font-weight:600;letter-spacing:-.01em}
+.bub[aria-pressed="true"]{background:var(--blue)}
+.bub.combined[aria-pressed="true"]{background:var(--blue);outline:3px solid var(--mustard);outline-offset:3px}
+.bub .x{position:absolute;top:2px;right:8%;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink);background:var(--card);font-size:13px;line-height:19px;cursor:pointer;opacity:0;transition:opacity .15s;padding:0}
+.bub:hover .x,.bub:focus-within .x{opacity:1}
+@media (hover:none){.bub .x{opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .bub{animation:drift 9s ease-in-out infinite}
+  .bub:nth-child(3n){animation-duration:11s;animation-delay:-3s}
+  .bub:nth-child(3n+1){animation-duration:8s;animation-delay:-5s}
+  .bub.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.field-empty{max-width:320px;text-align:center;color:var(--muted);margin:auto;padding:18px 0;font-size:14px}
+.adder{display:flex;gap:10px}
+.adder input{flex:1;min-width:0;border:2px solid var(--ink);border-radius:999px;padding:8px 14px;background:var(--paper);font-size:14.5px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.status{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.status.warn{color:var(--no)}
+
+.concept{border:2px solid var(--ink);border-radius:16px;background:color-mix(in srgb,var(--mustard) 22%,var(--card));padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.concept h3{font-size:17px}
+.concept p{margin:0;font-size:14.5px}
+.opt{border:2px solid var(--ink);border-radius:16px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;justify-content:space-between;background:var(--card)}
+.opt p{margin:0;font-size:16px;line-height:1.45;font-weight:500}
+.opt small{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-top:5px;font-weight:700}
+.kept{display:flex;flex-direction:column;gap:10px}
+.lock{border:2px solid var(--ink);border-radius:16px;background:color-mix(in srgb,var(--yes) 10%,var(--card));padding:11px 14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.lock p{margin:0;font-weight:500;line-height:1.45}
+.lock small{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:999px;font-size:14px;z-index:50;font-weight:700}
+
+/* projects home */
+.home{min-height:100%;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.home .band{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.home-inner{max-width:980px;margin:0 auto;padding:36px max(18px,env(safe-area-inset-right,0px)) 60px max(18px,env(safe-area-inset-left,0px))}
+.home h2.hero{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.035em;line-height:1.02}
+.home .lede{color:var(--muted);font-size:17px;margin:12px 0 28px;max-width:52ch}
+.newp{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.newp input{flex:1;min-width:200px;border:var(--b);border-radius:999px;padding:10px 18px;background:var(--card);font-size:15.5px;box-shadow:var(--sh-sm)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:26px}
+.pcard{background:var(--card);border:var(--b);border-radius:26px;box-shadow:var(--sh);padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pcard h3{font-size:22px;font-weight:800;overflow-wrap:anywhere}
+.tag{border:var(--b);border-radius:999px;background:var(--tint);padding:3px 12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.pcard p{margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pmeta{font-family:var(--mono);font-size:12.5px;color:var(--muted);letter-spacing:.06em}
+.pcard .acts{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:6px}
+.open-link{background:none;border:0;padding:0;cursor:pointer;font-family:var(--display);font-weight:600;font-size:15px;color:var(--ink)}
+.open-link:hover{color:var(--blue)}
+.home-empty{border:2.5px dashed color-mix(in srgb,var(--ink) 35%,transparent);border-radius:26px;padding:34px;text-align:center;color:var(--muted)}
+.rename{border:2px solid var(--ink);border-radius:10px;padding:6px 10px;font-family:var(--display);font-weight:600;font-size:18px;width:100%}
+
+/* project header */
+.proj{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.back{flex:0 0 auto}
+.pname{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.02em;border:2px solid transparent;border-radius:10px;background:transparent;padding:4px 8px;min-width:0;width:100%}
+.pname:hover{border-color:color-mix(in srgb,var(--ink) 30%,transparent)}
+.pname:focus{border-color:var(--ink);background:var(--card);outline:none}
+.saved{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;color:var(--yes)}
+.saved.saving{color:var(--muted)}
+.saved.err{color:var(--no)}
+.band-right{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+@media (max-width:560px){.band{flex-wrap:wrap}.band-right{width:100%;justify-content:space-between}}
+.intent.collapsed .ages,.intent.collapsed textarea{display:none}
+.intent.collapsed{padding-block:10px}
+.intent-sum{font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.toggle{border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:2px 13px;font-weight:700;font-size:13px;cursor:pointer;flex:0 0 auto}
+.toggle:hover{background:var(--tint)}
+.agentbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 18px;border-top:var(--b);background:var(--mustard);font-size:14px;font-weight:500}
+.agentbar.info{background:var(--blue-soft)}
+.agentbar .btn{padding:5px 14px;font-size:13.5px;flex:0 0 auto}
+</style>
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+
+
+<!-- PROJECTS HOME -->
+<main class="home" id="home">
+  <div class="band">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">IL</div>
+      <div><h1>Idea Lab</h1><p>Start from intent. Find the core idea.</p></div>
+    </div>
+    <a class="btn" href="/" style="text-decoration:none">← Agora</a>
+  </div>
+  <div class="home-inner">
+    <h2 class="hero">Which idea are we chasing?</h2>
+    <p class="lede">Each project keeps its own intent, conversation, bubbles and loglines. Open one to pick up where you left off. Projects are saved in this browser.</p>
+    <form class="newp" id="newProject">
+      <input type="text" id="newName" placeholder="Name a new project, e.g. Pipi and Poto spin-off" aria-label="New project name" maxlength="80">
+      <button class="btn blue" type="submit">New project</button>
+    </form>
+    <div class="grid" id="projects"></div>
+  </div>
+</main>
+
+<!-- PROJECT WORKSPACE -->
+<div class="app" id="workspace" hidden>
+  <section class="pane left" aria-label="Conversation with the agent">
+    <div class="band">
+      <div class="proj">
+        <button class="btn back" id="closeProject" title="Save and go back to your projects">Save &amp; close</button>
+        <input class="pname" id="pname" aria-label="Project name" maxlength="80">
+      </div>
+      <div class="band-right"><span class="saved" id="saved">✓ Saved</span></div>
+    </div>
+    <div class="intent" id="intentBox">
+      <div class="intent-head"><span class="label">Intent</span><span class="intent-sum" id="intentSum" hidden></span><button class="toggle" id="intentToggle" aria-expanded="true">Hide</button></div>
+      <div class="ages" role="group" aria-label="Age group">
+        <button class="age" data-age="Preschool" aria-pressed="false">Preschool<small>0–4</small></button>
+        <button class="age" data-age="Primary" aria-pressed="false">Primary<small>5–9</small></button>
+        <button class="age" data-age="Intermediate" aria-pressed="false">Intermediate<small>10–11</small></button>
+      </div>
+      <textarea id="intent" placeholder="What do you want to achieve for these kids? A feeling, a change, something they carry with them."></textarea>
+    </div>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <div class="tip">Double-click a word, or highlight words then double-click, to send it to the bubbles</div>
+    <div class="agentbar" id="agentbar" hidden><span id="agentMsg"></span><button class="btn" id="agentBtn" hidden></button></div>
+    <form class="compose" id="compose">
+      <textarea id="input" rows="1" placeholder="Talk it through with the agent…" aria-label="Message"></textarea>
+      <button class="btn blue" id="send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <section class="pane right" aria-label="Idea flow">
+    <div class="flow">
+      <div class="step">
+        <div class="step-head">
+          <div><span class="label">Step 1</span><h2>Intent</h2></div>
+          <div class="state no" id="st-intent"><span class="dot">✕</span><span>Not yet</span></div>
+        </div>
+        <p class="summary" id="intentSummary"></p>
+      </div>
+      <div class="arrow" aria-hidden="true"><svg viewBox="0 0 34 40"><path d="M17 3v30M6 23l11 12 11-12" fill="none" stroke="#E5762C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="step">
+        <div class="step-head">
+          <div><span class="label">Step 2</span><h2>Bubbles</h2></div>
+          <div class="state no" id="st-bubbles"><span class="dot">✕</span><span>Not yet</span></div>
+        </div>
+        <div class="field" id="field"></div>
+        <form class="adder" id="adder">
+          <input type="text" id="addText" placeholder="Add your own bubble" aria-label="Add your own bubble" maxlength="160">
+          <button class="btn" type="submit">Add</button>
+        </form>
+        <div class="row"><span class="status" id="selCount">Tap bubbles to select them</span><button class="btn flat" id="clearSel" hidden>Clear selection</button></div>
+      </div>
+      <div class="arrow" aria-hidden="true"><svg viewBox="0 0 34 40"><path d="M17 3v30M6 23l11 12 11-12" fill="none" stroke="#E5762C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="step">
+        <div class="step-head">
+          <div><span class="label">Step 3</span><h2>Combine</h2></div>
+          <div class="state no" id="st-combine"><span class="dot">✕</span><span>Not yet</span></div>
+        </div>
+        <p class="hint" style="margin:0">Select two or more bubbles, then combine them into one core idea.</p>
+        <div class="row"><button class="btn mustard" id="combine" disabled>Combine selected</button><span class="status" id="combineStatus"></span></div>
+        <div id="combineOut"></div>
+      </div>
+      <div class="arrow" aria-hidden="true"><svg viewBox="0 0 34 40"><path d="M17 3v30M6 23l11 12 11-12" fill="none" stroke="#E5762C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="step">
+        <div class="step-head">
+          <div><span class="label">Step 4</span><h2>Logline</h2></div>
+          <div class="state no" id="st-logline"><span class="dot">✕</span><span>Not yet</span></div>
+        </div>
+        <p class="hint" style="margin:0">Select a combined idea, or any bubbles, then create loglines. Keep the ones that land.</p>
+        <div class="row"><button class="btn blue" id="logline" disabled>Create logline</button><span class="status" id="loglineStatus"></span></div>
+        <div id="loglineOut"></div>
+        <div class="kept" id="locked"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<button class="float-send" id="floatSend" hidden>Send to bubbles</button>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DEFAULT_PROFILE = `Allan George (Ngāti Kahungunu) is an Auckland-based writer, director and editor with about 17 years in post-production across broadcast and advertising.
+
+Children's animated series: writer on Quimbo's Quest and Taiohi Gods; creator of Pipi and Poto, currently in production.
+
+MIRUMIRU (Bubble), 2025: a 12-minute wordless animated short that he wrote, directed and edited. It was produced by Jason Tāhū Taylor with Mukpuddy Animation, with music by Ryan Youens. A kaumātua, Shorty, chases his wife Lena's memories, which float away as bubbles as her dementia worsens. It is set in Wairoa and draws on Allan's own whānau, home and marae, made after his mother's decline with dementia. It won Best Director at Show Me Shorts 2025, the Best Indigenous Short Jury Award at the Santa Fe International Film Festival 2026, and was co-winner of the Letterboxd Award for Māori Pasifika Talent at NZIFF.
+
+Feature and film development: selected for the Māoriland Indigenous Co-Lab with his animated feature Ancestral Fusion; his NZFC-funded film Macron Man is in production.
+
+Other work and awards: Best Māori Director and Best Actor at Tropfest NZ; Third Place and Audience Favourite at Tropfest NZ 2016; Best Screenplay at LA Shorts Fest for the comedy "Everybody Has a Thing"; ScreenCraft Comedy finalist; documentaries including He Hekenga Tūhura (Sir Hector Busby, waka and celestial navigation) and Pig Politics (Aotea Great Barrier Island).
+
+Style: emotional, wordless visual storytelling; personal and whānau-rooted; authentic te ao Māori; warm comedy; an editor's sense of pacing.
+
+Current target: NZ On Air Kids IP Incubator. Original, digital-first children's IP for ages 0–11, released direct to audience mainly on YouTube and developed iteratively. Animation.`;
+const AGES={Preschool:"Preschool (0–4)",Primary:"Primary (5–9)",Intermediate:"Intermediate (10–11)"};
+const OPENER="Kia ora Allan. Let's start with intent, not ideas.\n\nPick the age group above, then tell me what you want to achieve for those kids. What should they feel, discover or carry with them after watching? It can be rough. We'll work backwards from there to the core need, and then to the idea.";
+
+const $=s=>document.querySelector(s);
+let db=null,sample=null,busy=false;
+const projects=new Map();let projectsLoaded=false;
+let P=null; // open project id
+const S={name:"",age:"",intent:"",turns:[],bubbles:new Map(),loglines:new Map(),selected:new Set(),loaded:false};
+let unsubs=[];
+
+function el(tag,attrs={},...kids){const n=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==="class")n.className=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(v!==undefined&&v!==null&&v!==false)n.setAttribute(k,v===true?"":v)}for(const c of kids.flat()){if(c==null||c===false)continue;n.append(c.nodeType?c:document.createTextNode(String(c)))}return n}
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2400)}
+const profileText=()=>DEFAULT_PROFILE;
+function errMsg(e){return({not_granted:"The agent isn't allowed on this page yet. Allow Claude from the page's Permissions menu.",sampling_disabled:"Claude isn't available for this account.",rate_limited:"Too many requests just now. Wait a minute, then try again.",refused:"The agent couldn't help with that. Try putting it another way.",invalid_json:"That came back in an unexpected format. Try again.",session_expired:"Sign in to Claude again, then retry.",prompt_too_large:"This conversation is too long now. Start a new project to continue fresh."})[e?.code]||"The agent couldn't answer just then. Check your connection, then try again."}
+function when(t){if(!t)return"";const d=Date.now()-t;if(d<6e4)return"just now";if(d<36e5)return Math.round(d/6e4)+" min ago";if(d<864e5)return Math.round(d/36e5)+" hr ago";return new Date(t).toLocaleDateString("en-NZ",{day:"numeric",month:"short",year:"numeric"})}
+
+/* ---------- local store: projects are kept in this browser (localStorage) ---------- */
+function memDB(){
+  const KEY="idealab:v1",docs=new Map(),subs=new Set();
+  try{const raw=localStorage.getItem(KEY);if(raw)for(const[k,v]of JSON.parse(raw))docs.set(k,v)}catch{}
+  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify([...docs]))}catch{toast("Couldn't save in this browser. Storage may be full or blocked.")}};
+  const notify=()=>{persist();subs.forEach(f=>f())};
+  const snap=(path)=>{const d=docs.get(path);return{id:path.split("/").pop(),exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}}};
+  const docRef=path=>({id:path.split("/").pop(),path,
+    async get(){return snap(path)},async set(d){docs.set(path,structuredClone(d));notify()},
+    async update(d){if(!docs.has(path))throw{code:"invalid_argument"};docs.set(path,{...docs.get(path),...structuredClone(d)});notify()},
+    async delete(){docs.delete(path);notify()},
+    onSnapshot(cb){const f=()=>cb(snap(path));subs.add(f);setTimeout(f);return()=>subs.delete(f)},
+    collection(c){return colRef(path+"/"+c)}});
+  const colRef=path=>{const list=()=>{const out=[];for(const k of docs.keys()){const rest=k.slice(path.length+1);if(k.startsWith(path+"/")&&!rest.includes("/"))out.push(snap(k))}return out};
+    return{path,doc(id){return docRef(path+"/"+(id||Math.random().toString(36).slice(2,12)))},
+      async add(d){const r=this.doc();await r.set(d);return r},
+      async get(){const ds=list();return{docs:ds,size:ds.length,empty:!ds.length}},
+      onSnapshot(cb){const f=()=>{const ds=list();cb({docs:ds,size:ds.length,empty:!ds.length,metadata:{fromCache:false}})};subs.add(f);setTimeout(f);return()=>subs.delete(f)}}};
+  return{doc:docRef,collection:colRef};
+}
+
+/* ---------- save indicator ---------- */
+let inflight=0,saveErr=false;
+function savedUI(){const s=$("#saved");if(saveErr){s.className="saved err";s.textContent="✕ Not saved";return}if(inflight){s.className="saved saving";s.textContent="Saving…";return}s.className="saved";s.textContent="✓ Saved"}
+async function w(p){inflight++;saveErr=false;savedUI();try{await p}catch(e){saveErr=true;toast(e?.code==="quota_exceeded"?"Storage is full. Delete an old project, then try again.":"That didn't save. Check your connection, then try again.");throw e}finally{inflight--;savedUI()}}
+const pref=()=>db.doc("projects/"+P);
+let sessT=null,sessPending=false;
+function saveSession(){sessPending=true;clearTimeout(sessT);sessT=setTimeout(flushSession,600);$("#saved").className="saved saving";$("#saved").textContent="Saving…"}
+async function flushSession(){clearTimeout(sessT);if(!sessPending||!P)return;sessPending=false;
+  const d={age:S.age,intent:S.intent,turns:S.turns.slice(-60),updatedAt:Date.now(),bubbleCount:S.bubbles.size,loglineCount:S.loglines.size};
+  try{await w(pref().update(d))}catch{}}
+
+/* ---------- projects home ---------- */
+function renderHome(){
+  const g=$("#projects");g.replaceChildren();
+  const list=[...projects.entries()].sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
+  if(!projectsLoaded){g.append(el("div",{class:"home-empty",style:"grid-column:1/-1"},"Loading your projects…"));return}
+  if(!list.length){g.append(el("div",{class:"home-empty",style:"grid-column:1/-1"},el("b",{style:"color:var(--ink)"},"No projects yet."),el("br"),"Name your first one above and press New project."));return}
+  for(const[id,p]of list){
+    const card=el("div",{class:"pcard"});
+    const del=el("button",{class:"btn flat"},"Delete");let armed=false;
+    del.onclick=()=>{if(!armed){armed=true;del.textContent="Delete for good?";del.style.color="var(--no)";setTimeout(()=>{armed=false;del.textContent="Delete";del.style.color=""},3500);return}deleteProject(id)};
+    const ren=el("button",{class:"btn flat"},"Rename");
+    ren.onclick=()=>{const inp=el("input",{class:"rename","aria-label":"Project name",maxlength:"80"});inp.value=p.name||"";
+      const done=async(save)=>{if(save&&inp.value.trim()&&inp.value.trim()!==p.name){try{await w(db.doc("projects/"+id).update({name:inp.value.trim()}))}catch{}}renderHome()};
+      inp.onkeydown=e=>{if(e.key==="Enter")done(true);if(e.key==="Escape")done(false)};inp.onblur=()=>done(true);
+      card.querySelector("h3").replaceWith(inp);inp.focus();inp.select()};
+    const counts=[`${p.bubbleCount||0} bubble${p.bubbleCount===1?"":"s"}`,`${p.loglineCount||0} logline${p.loglineCount===1?"":"s"}`].join(" · ");
+    card.append(
+      el("div",{class:"pcard-head"},el("h3",{},p.name||"Untitled project"),p.age?el("span",{class:"tag"},p.age):null),
+      el("p",{},p.intent?.trim()?p.intent:"No intent written yet."),
+      el("div",{class:"pmeta"},counts+" · "+when(p.updatedAt)),
+      el("div",{class:"acts"},el("button",{class:"open-link",onclick:()=>openProject(id)},"Open →"),el("div",{},ren,del)));
+    g.append(card);
+  }
+}
+$("#newProject").onsubmit=async e=>{
+  e.preventDefault();if(!db)return;
+  const name=$("#newName").value.trim()||"Untitled project";
+  try{const now=Date.now();const r=await db.collection("projects").add({name,age:"",intent:"",turns:[],bubbleCount:0,loglineCount:0,createdAt:now,updatedAt:now});$("#newName").value="";openProject(r.id,{name})}
+  catch(err){toast(err?.code==="quota_exceeded"?"Storage is full. Delete an old project, then try again.":"Couldn't create the project. Check your connection, then try again.")}
+};
+async function deleteProject(id){
+  try{
+    for(const c of["bubbles","loglines"]){const q=await db.collection(`projects/${id}/${c}`).get();for(const d of q.docs)await db.doc(`projects/${id}/${c}/${d.id}`).delete()}
+    await db.doc("projects/"+id).delete();toast("Project deleted");
+  }catch{toast("Couldn't delete the project. Try again.")}
+}
+
+/* ---------- open / close ---------- */
+function openProject(id,seed){
+  closeSubs();P=id;
+  const p=projects.get(id)||seed||{};
+  Object.assign(S,{name:p.name||"",age:p.age||"",intent:p.intent||"",turns:Array.isArray(p.turns)?p.turns.map(t=>({role:t.role,content:t.content})):[],bubbles:new Map(),loglines:new Map(),selected:new Set(),loaded:false});
+  $("#combineOut").replaceChildren();$("#loglineOut").replaceChildren();$("#combineStatus").textContent="";$("#loglineStatus").textContent="";
+  $("#home").hidden=true;$("#workspace").hidden=false;$("#pname").value=S.name;saveErr=false;savedUI();
+  renderIntent();renderChat();renderField();renderLocked();
+  setIntentOpen(!(S.age&&S.intent.trim()&&S.turns.length));
+  try{localStorage.setItem("idealab:last",id)}catch{}
+  unsubs.push(pref().onSnapshot(x=>{if(!x.exists){if(P===id){toast("This project was deleted.");showHome()}return}if(busy||sessPending)return;const v=x.data();
+    S.age=v.age||"";S.intent=v.intent||"";S.turns=Array.isArray(v.turns)?v.turns.map(t=>({role:t.role,content:t.content})):[];if(document.activeElement!==$("#pname"))$("#pname").value=v.name||"";renderIntent();renderChat()},()=>{}));
+  unsubs.push(db.collection(`projects/${id}/bubbles`).onSnapshot(s=>{S.bubbles=new Map(s.docs.map(x=>[x.id,x.data()]));S.loaded=true;renderField()},()=>{S.loaded=true;renderField()}));
+  unsubs.push(db.collection(`projects/${id}/loglines`).onSnapshot(s=>{S.loglines=new Map(s.docs.map(x=>[x.id,x.data()]));renderLocked()},()=>{}));
+  setTimeout(()=>$("#intent").value?$("#input").focus():$("#intent").focus(),50);
+}
+function closeSubs(){unsubs.forEach(u=>{try{u()}catch{}});unsubs=[]}
+function showHome(){chatCtl?.abort();closeSubs();P=null;$("#workspace").hidden=true;$("#home").hidden=false;renderHome();scrollTo(0,0)}
+$("#closeProject").onclick=async()=>{
+  const b=$("#closeProject");b.disabled=true;b.textContent="Saving…";
+  await flushSession();await flushName();
+  const start=Date.now();while(inflight&&Date.now()-start<5000)await new Promise(r=>setTimeout(r,100));
+  b.disabled=false;b.textContent="Save & close";
+  if(saveErr){toast("Some changes didn't save. Check your connection and try again.");return}
+  toast("Saved");showHome();
+};
+let nameT=null,namePending=false;
+$("#pname").addEventListener("input",()=>{namePending=true;$("#saved").className="saved saving";$("#saved").textContent="Saving…";clearTimeout(nameT);nameT=setTimeout(flushName,700)});
+async function flushName(){clearTimeout(nameT);if(!namePending||!P)return;namePending=false;const v=$("#pname").value.trim()||"Untitled project";S.name=v;try{await w(pref().update({name:v,updatedAt:Date.now()}))}catch{}}
+
+/* ---------- flow status ---------- */
+function setState(id,yes,yesText,noText){const n=$("#"+id);n.className="state "+(yes?"yes":"no");n.replaceChildren(el("span",{class:"dot"},yes?"✓":"✕"),el("span",{},yes?yesText:noText))}
+function renderFlow(){
+  const hasIntent=!!(S.age&&S.intent.trim());
+  setState("st-intent",hasIntent,"Set",S.age||S.intent.trim()?"Half set":"Not yet");
+  const s=$("#intentSummary");s.replaceChildren();
+  if(S.age||S.intent.trim())s.append(el("b",{},AGES[S.age]||"Age not chosen"),S.intent.trim()?" · "+S.intent.trim():" · Write what you want to achieve");
+  else s.append(el("span",{class:"hint"},"Choose an age group and write your intent on the left."));
+  const all=[...S.bubbles.values()];
+  setState("st-bubbles",all.length>=2,`${all.length} kept`,all.length===1?"1 kept":"Not yet");
+  setState("st-combine",all.some(b=>b.kind==="combined"),"Done","Not yet");
+  setState("st-logline",S.loglines.size>0,`${S.loglines.size} kept`,"Not yet");
+}
+
+/* ---------- intent ---------- */
+function renderIntent(){
+  document.querySelectorAll(".age").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.age===S.age)));
+  if(document.activeElement!==$("#intent"))$("#intent").value=S.intent||"";
+  $("#intentSum").textContent=[S.age,S.intent.trim()].filter(Boolean).join(" · ")||"Not set yet";
+  renderFlow();
+}
+document.querySelectorAll(".age").forEach(b=>b.onclick=()=>{S.age=S.age===b.dataset.age?"":b.dataset.age;renderIntent();saveSession()});
+$("#intent").addEventListener("input",e=>{S.intent=e.target.value;renderFlow();saveSession()});
+let intentOpen=true;
+function setIntentOpen(o){intentOpen=o;$("#intentBox").classList.toggle("collapsed",!o);$("#intentToggle").textContent=o?"Hide":"Edit";$("#intentToggle").setAttribute("aria-expanded",String(o));$("#intentSum").hidden=o;renderIntent()}
+$("#intentToggle").onclick=()=>{setIntentOpen(!intentOpen);if(intentOpen)$("#intent").focus()};
+
+/* ---------- agent availability ---------- */
+let perms=null;
+function agentBar(msg,btnText,fn,info){const b=$("#agentbar");b.className="agentbar"+(info?" info":"");$("#agentMsg").textContent=msg;const k=$("#agentBtn");k.hidden=!btnText;k.textContent=btnText||"";k.onclick=fn||null;b.hidden=false}
+function hideAgentBar(){$("#agentbar").hidden=true}
+function noAgent(){agentBar("The agent can't run in this view. Open the Idea Lab in a web browser or the Claude desktop app to talk with it. Your projects are saved and will be there.")}
+async function askPerm(){if(!perms)return openPerms();const r=await perms.request(["sample"]).catch(()=>({}));if(r.sample==="granted"){hideAgentBar();toast("Agent allowed. Send your message")}else if(r.sample==="denied")agentBar("Claude is turned off for this page, so the agent can't reply.","Open permissions",openPerms);else checkAgent()}
+async function openPerms(){try{await perms.manage();checkAgent()}catch{agentBar("Open this page's ••• menu, choose Permissions, and allow Claude.")}}
+async function checkAgent(){
+  if(!sample){noAgent();return}
+  const st=perms?await perms.state("sample").catch(()=>null):null;
+  if(st==="prompt")agentBar("Allow the agent to use Claude on this page so it can reply.","Allow",askPerm,true);
+  else if(st==="denied")agentBar("Claude is turned off for this page, so the agent can't reply.","Open permissions",openPerms);
+  else if(st==="unavailable")noAgent();
+  else hideAgentBar();
+}
+
+/* ---------- chat ---------- */
+function renderChat(streamText){
+  const c=$("#chat");c.replaceChildren();
+  c.append(el("div",{class:"msg agent"},el("div",{class:"who"},"AGENT"),OPENER));
+  for(const t of S.turns)c.append(t.role==="user"?el("div",{class:"msg you"},t.content):el("div",{class:"msg agent"},el("div",{class:"who"},"AGENT"),t.content));
+  if(streamText!==undefined)c.append(el("div",{class:"msg agent"+(streamText?"":" thinking"),id:"streaming"},el("div",{class:"who"},"AGENT"),streamText||"Thinking…"));
+  c.scrollTop=c.scrollHeight;
+}
+function rules(){
+  const kept=[...S.bubbles.values()].map(b=>"- "+(b.kind==="combined"?b.title+": "+b.concept:b.text)).join("\n")||"(none yet)";
+  return `You are Allan George's story development partner inside his idea app. The app finds the CORE IDEA for a children's animated series, working backwards from intent.
+
+THE METHOD
+1. Intent: the age group, and what Allan wants to achieve for those children (a feeling, a change, something they carry with them).
+2. Work backwards from that intent to the core need of a child that age: what they're going through, longing for, or afraid of.
+3. Find an emotional engine and a world, character or situation that meets that need, and that could sustain many short episodes.
+Move through these naturally. Don't rush to a finished idea. Spend time on the need.
+
+HOW YOU HELP
+You're a helper, not a pusher, like a generous development partner. Build on Allan's own words and instincts. Offer options and help them grow: suggest 2–4 concrete, vivid fragments in most replies (an image, a character, a situation, a what-if, a feeling). Write them as short, memorable phrases, because Allan double-clicks phrases to save them as bubbles. Ask at most one question per reply. Keep replies under 170 words. Plain text only: no headings, no bold, simple "-" bullets are fine. Use plain New Zealand English.
+Allan is an experienced children's animation writer and creator, so talk to him as a peer. Draw on his strengths: wordless visual storytelling, whānau warmth, comedy, te ao Māori. Use te reo and tikanga only in specific, grounded ways a Ngāti Kahungunu creator would recognise, never as decoration. Avoid stereotypes. Keep ideas age-appropriate.
+
+ABOUT ALLAN (background for you only; don't recite it back to him)
+${profileText()}
+
+THIS PROJECT: ${S.name||"Untitled"}
+Age group: ${AGES[S.age]||"not chosen yet"}
+What he wants to achieve: ${S.intent.trim()||"not written yet"}
+
+BUBBLES HE HAS KEPT SO FAR
+${kept}`;
+}
+let chatCtl;
+async function send(text){
+  if(busy||!text.trim()||!P)return;
+  if(!sample){noAgent();return}
+  const pid=P;busy=true;$("#send").textContent="Stop";updateActions();
+  let got=false;const slow=setTimeout(()=>{if(!got)agentBar("Still waiting for the agent. If you didn't see a permission prompt, allow Claude for this page.","Allow",askPerm)},15000);
+  S.turns=[...S.turns,{role:"user",content:text.trim()}];renderChat("");saveSession();
+  if(intentOpen&&S.age&&S.intent.trim())setIntentOpen(false);
+  chatCtl=new AbortController();
+  const input=[{role:"user",content:rules()},...S.turns.slice(-40)];
+  try{
+    const{text:reply}=await sample(input,{cache:false,signal:chatCtl.signal,onText:({text})=>{if(!got){got=true;hideAgentBar()}const s=$("#streaming");if(s){s.classList.remove("thinking");s.lastChild.textContent=text;$("#chat").scrollTop=$("#chat").scrollHeight}}});
+    if(P===pid)S.turns=[...S.turns,{role:"assistant",content:reply}];
+  }catch(e){
+    if(e.text&&P===pid)S.turns=[...S.turns,{role:"assistant",content:e.text+"\n\n(cut off)"}];
+    if(e.code==="not_granted")agentBar("The agent needs permission to use Claude on this page.","Open permissions",openPerms);
+    else if(e.code==="cancelled")toast("Stopped");
+    else toast(errMsg(e));
+  }finally{clearTimeout(slow);busy=false;$("#send").textContent="Send";if(P===pid){renderChat();saveSession()}updateActions()}
+}
+$("#compose").onsubmit=e=>{e.preventDefault();if(busy){chatCtl?.abort();return}const v=$("#input").value;if(!v.trim())return;if(!sample){noAgent();return}$("#input").value="";$("#input").style.height="";send(v)};
+$("#input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#compose").requestSubmit()}});
+$("#input").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,160)+"px"});
+
+/* ---------- capture: double-click to bubble ---------- */
+const chat=$("#chat");let pending=null;
+const clean=t=>t.replace(/\s+/g," ").replace(/^[\s"'“‘(\[\-–—•,.:;!?]+|[\s"'”’)\],.:;!?]+$/g,"").slice(0,160);
+chat.addEventListener("mouseup",()=>{const s=getSelection();const t=s.toString().trim();if(t&&/\s/.test(t)&&chat.contains(s.anchorNode))pending={t,at:Date.now()}});
+chat.addEventListener("dblclick",e=>{
+  if(!e.target.closest(".msg"))return;
+  const word=getSelection().toString().trim();
+  let text=word;
+  if(pending&&Date.now()-pending.at<8000&&(!word||pending.t.includes(word)))text=pending.t;
+  pending=null;text=clean(text);
+  if(text){capture(text);getSelection().removeAllRanges();hideFloat()}
+});
+const fs=$("#floatSend");
+document.addEventListener("selectionchange",()=>{
+  const s=getSelection();const t=s.toString().trim();
+  if(!t||!s.rangeCount||!chat.contains(s.anchorNode)){hideFloat();return}
+  const r=s.getRangeAt(0).getBoundingClientRect();
+  fs.style.top=Math.max(8,r.top-44)+"px";fs.style.left=Math.min(innerWidth-170,Math.max(8,r.left))+"px";fs.hidden=false;fs.dataset.t=t;
+});
+function hideFloat(){fs.hidden=true}
+fs.addEventListener("mousedown",e=>e.preventDefault());
+fs.onclick=()=>{const t=clean(fs.dataset.t||"");if(t)capture(t);getSelection().removeAllRanges();hideFloat()};
+let lastNew=null;
+async function capture(text){
+  if(!P)return;
+  if([...S.bubbles.values()].some(b=>(b.text||"").toLowerCase()===text.toLowerCase())){toast("Already in your bubbles");return}
+  const ref=db.collection(`projects/${P}/bubbles`).doc();lastNew=ref.id;
+  try{await w(ref.set({text,kind:"captured",createdAt:Date.now()}));toast("Sent to bubbles");saveSession()}catch{}
+}
+$("#adder").onsubmit=e=>{e.preventDefault();const t=clean($("#addText").value);if(t){capture(t);$("#addText").value=""}};
+
+/* ---------- bubbles ---------- */
+function size(t,combined){const n=t.length;return Math.round(Math.min(210,Math.max(92,58+Math.sqrt(n)*13+(combined?30:0))))}
+function renderField(){
+  const f=$("#field");f.replaceChildren();
+  const list=[...S.bubbles.entries()].sort((a,b)=>(a[1].createdAt||0)-(b[1].createdAt||0));
+  for(const id of [...S.selected])if(!S.bubbles.has(id))S.selected.delete(id);
+  if(!list.length)f.append(el("div",{class:"field-empty"},S.loaded?"No bubbles yet. Double-click words in the conversation to send them here.":"Loading your bubbles…"));
+  for(const[id,b]of list){
+    const label=b.kind==="combined"?(b.title||b.text):b.text;
+    const d=size(label,b.kind==="combined");
+    const fsz=d<110?13:d<150?14:15;
+    const node=el("div",{class:"bub"+(b.kind==="combined"?" combined":"")+(id===lastNew?" pop":""),role:"button",tabindex:"0","aria-pressed":String(S.selected.has(id)),title:b.kind==="combined"?(b.concept||label):label,style:`width:${d}px;height:${d}px;font-size:${fsz}px`},
+      el("span",{},label),
+      el("button",{class:"x","aria-label":"Remove bubble",title:"Remove"},"✕"));
+    node.onclick=e=>{if(e.target.closest(".x")){e.stopPropagation();S.selected.delete(id);w(db.doc(`projects/${P}/bubbles/${id}`).delete()).then(saveSession).catch(()=>{});return}toggle(id)};
+    node.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggle(id)}};
+    f.append(node);
+  }
+  if(lastNew&&S.bubbles.has(lastNew))lastNew=null;updateActions();renderFlow();
+}
+function toggle(id){S.selected.has(id)?S.selected.delete(id):S.selected.add(id);renderField()}
+function updateActions(){
+  const n=S.selected.size;
+  $("#selCount").textContent=n?`${n} selected`:"Tap bubbles to select them";
+  $("#combine").disabled=busy||n<2||!sample;$("#logline").disabled=busy||n<1||!sample;$("#clearSel").hidden=!n;
+  $("#logline").textContent=n>1?"Create logline from selected":"Create logline";
+}
+$("#clearSel").onclick=()=>{S.selected.clear();renderField()};
+
+/* ---------- combine & logline ---------- */
+function selBubbles(){return[...S.selected].map(id=>S.bubbles.get(id)).filter(Boolean)}
+function bubbleLine(b){return b.kind==="combined"?`${b.title}: ${b.concept}${b.coreNeed?" (core need: "+b.coreNeed+")":""}`:b.text}
+function context(){return`ABOUT ALLAN\n${profileText()}\n\nPROJECT: ${S.name||"Untitled"}\nAge group: ${AGES[S.age]||"not set"}\nWhat he wants to achieve: ${S.intent.trim()||"not set"}\n\nRECENT CONVERSATION (latest last)\n${S.turns.slice(-8).map(t=>(t.role==="user"?"Allan: ":"Agent: ")+t.content).join("\n").slice(-6000)||"(none)"}`}
+function setBusy(b,where,msg,warn){busy=b;const s=$(where);s.textContent=msg||"";s.className="status"+(warn?" warn":"");updateActions()}
+
+$("#combine").onclick=async()=>{
+  const sel=selBubbles();if(sel.length<2)return;const pid=P;
+  setBusy(true,"#combineStatus","Combining…");$("#combineOut").replaceChildren();
+  const prompt=`${context()}\n\nAllan has selected these bubbles (words, phrases and concepts he likes):\n${sel.map(b=>"- "+bubbleLine(b)).join("\n")}\n\nCombine them into ONE core idea for a children's animated series that serves his intent. Keep the spirit of every bubble. Don't just list them; find what connects them. Reply with only a JSON object: {"title": string (2–5 word working title), "concept": string (2–3 sentences: who, world, emotional engine), "coreNeed": string (the child's core need it answers, max 15 words)}`;
+  try{
+    const r=await sample.json(prompt,{cache:false});
+    if(!r||!r.title||!r.concept)throw{code:"invalid_json"};
+    if(P!==pid){busy=false;return}
+    const b={kind:"combined",title:String(r.title),text:String(r.title),concept:String(r.concept),coreNeed:String(r.coreNeed||""),sources:sel.map(x=>x.kind==="combined"?x.title:x.text),createdAt:Date.now()};
+    const ref=db.collection(`projects/${pid}/bubbles`).doc();lastNew=ref.id;await w(ref.set(b));
+    S.selected.clear();S.selected.add(ref.id);setBusy(false,"#combineStatus","");renderField();saveSession();
+    $("#combineOut").replaceChildren(el("div",{class:"concept"},el("span",{class:"label",style:"font-size:11.5px"},"Combined idea"),el("h3",{},b.title),el("p",{},b.concept),b.coreNeed?el("p",{class:"hint"},"Core need: "+b.coreNeed):null,el("p",{class:"hint"},"From: "+b.sources.join(" · "))));
+  }catch(e){setBusy(false,"#combineStatus",errMsg(e),true)}
+};
+$("#logline").onclick=async()=>{
+  const sel=selBubbles();if(!sel.length)return;const pid=P;
+  setBusy(true,"#loglineStatus","Writing loglines…");
+  const prompt=`${context()}\n\nBuild a logline from this selected material:\n${sel.map(b=>"- "+bubbleLine(b)).join("\n")}\n\nWrite 3 different loglines for a children's animated series aimed at ${AGES[S.age]||"the intended age group"}. Each is one sentence, 35 words at most, with a specific protagonist, what they want, what's in the way, and the hook that makes kids want to come back each episode. It must serve Allan's intent. Make the three distinct in angle or tone (for example heartfelt, comic, adventurous). Reply with only a JSON array of 3 objects: {"logline": string, "angle": string (2–4 words naming the angle)}`;
+  try{
+    const arr=await sample.json(prompt,{cache:false});
+    const list=(Array.isArray(arr)?arr:[]).filter(x=>x&&x.logline).slice(0,3);
+    if(!list.length)throw{code:"invalid_json"};
+    setBusy(false,"#loglineStatus","");if(P!==pid)return;
+    const sources=sel.map(x=>x.kind==="combined"?x.title:x.text);
+    const wrap=el("div",{style:"display:flex;flex-direction:column;gap:10px"});
+    for(const x of list){
+      const btn=el("button",{class:"btn"},"Keep");
+      btn.onclick=async()=>{btn.disabled=true;btn.textContent="Kept";try{await w(db.collection(`projects/${pid}/loglines`).add({logline:String(x.logline),angle:String(x.angle||""),sources,age:S.age,intent:S.intent,createdAt:Date.now()}));toast("Logline kept");saveSession()}catch{btn.disabled=false;btn.textContent="Keep"}};
+      wrap.append(el("div",{class:"opt"},el("p",{},String(x.logline),el("small",{},String(x.angle||""))),btn));
+    }
+    wrap.append(el("div",{class:"hint"},"Not there yet? Keep talking with the agent, adjust your bubbles, and try again."));
+    $("#loglineOut").replaceChildren(wrap);
+  }catch(e){setBusy(false,"#loglineStatus",errMsg(e),true)}
+};
+function renderLocked(){
+  const box=$("#locked");box.replaceChildren();
+  const list=[...S.loglines.entries()].sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  if(list.length){
+    box.append(el("span",{class:"label",style:"color:var(--yes);margin-top:6px"},"Kept · ready for synopsis"));
+    for(const[id,l]of list){
+      const x=el("button",{class:"btn flat","aria-label":"Remove logline"},"Remove");
+      let armed=false;x.onclick=()=>{if(!armed){armed=true;x.textContent="Confirm";setTimeout(()=>{armed=false;x.textContent="Remove"},3000);return}w(db.doc(`projects/${P}/loglines/${id}`).delete()).then(saveSession).catch(()=>{})};
+      box.append(el("div",{class:"lock"},el("div",{},el("p",{},l.logline),el("small",{},[AGES[l.age]||"",l.angle].filter(Boolean).join(" · "))),x));
+    }
+  }
+  renderFlow();
+}
+
+/* ---------- Claude via Agora's /api/claude relay (the API key stays on the server) ---------- */
+const MODEL="claude-sonnet-4-6";
+function toMessages(input){
+  let system,msgs;
+  if(typeof input==="string")msgs=[{role:"user",content:input}];
+  else{system=input[0].content;msgs=input.slice(1)}
+  const out=[];
+  for(const m of msgs){const last=out[out.length-1];if(last&&last.role===m.role)last.content+="\n\n"+m.content;else out.push({role:m.role,content:m.content})}
+  if(out[0]?.role!=="user")out.unshift({role:"user",content:"(continue)"});
+  return{system,messages:out};
+}
+async function callClaude(input,opts={}){
+  const{system,messages}=toMessages(input);
+  let res,data;
+  try{res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},signal:opts.signal,
+    body:JSON.stringify({model:MODEL,max_tokens:opts.maxTokens||1500,stream:false,...(system?{system}:{}),messages})})}
+  catch(e){throw{code:e?.name==="AbortError"?"cancelled":"upstream_error",message:String(e)}}
+  try{data=await res.json()}catch{throw{code:"upstream_error",message:"Server error ("+res.status+")"}}
+  if(res.status===429)throw{code:"rate_limited"};
+  if(data.error||!Array.isArray(data.content))throw{code:"upstream_error",message:typeof data.error==="string"?data.error:(data.error?.message||"Unexpected response")};
+  const text=data.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+  if(!text.trim())throw{code:"empty_completion"};
+  opts.onText?.({text,delta:text});
+  return{text,truncated:data.stop_reason==="max_tokens"};
+}
+callClaude.json=async(input,opts={})=>{
+  const{text}=await callClaude(input,opts);
+  const tries=[text,(text.match(/```(?:json)?\s*([\s\S]*?)```/)||[])[1],text.slice(Math.min(...["{","["].map(c=>{const i=text.indexOf(c);return i<0?1e9:i})),Math.max(text.lastIndexOf("}"),text.lastIndexOf("]"))+1)];
+  for(const t of tries){if(!t)continue;try{return JSON.parse(t)}catch{}}
+  throw{code:"invalid_json",text};
+};
+
+/* ---------- boot ---------- */
+renderHome();
+(async()=>{
+  sample=callClaude;perms=null;
+  checkAgent();
+  updateActions();
+  db=memDB();
+  const timer=0;
+  db.collection("projects").onSnapshot(snap=>{
+    if(!snap.metadata?.fromCache)clearTimeout(timer);
+    projects.clear();for(const x of snap.docs)projects.set(x.id,x.data());projectsLoaded=true;
+    if(!P)renderHome();
+  },()=>{clearTimeout(timer);projectsLoaded=true;renderHome();toast("Your projects couldn't be loaded. Reopen the page to try again.")});
+})();
+</script>
+
+</body>
+</html>

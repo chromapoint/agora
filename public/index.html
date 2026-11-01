@@ -1165,6 +1165,7 @@ function HomepagePhase({ onSwitchMode }) {
     { id:"beatbuilder", label:"Beat Builder",    tag:"Expand",    desc:"Paste an outline or beat-by-beat summary. Get back a detailed scene narrative with dialogue, actions, and sensory detail." },
     { id:"sweetener",   label:"Scene Sweetener", tag:"Rewrite",   desc:"Paste a scene and pick a mode — build tension, add warmth, sharpen conflict, spark chemistry, lighten the mood, or deepen grief." },
     { id:"compass",     label:"Compass",         tag:"Apply",     desc:"Paste your entire screenplay and all Story Compass feedback. Get back a fully revised screenplay with all changes marked in bold." },
+    { id:"idealab",     label:"Idea Lab",        tag:"Generate",  desc:"Start from intent: age and what you want to achieve. Talk it through with an agent, save words as bubbles, combine them, and shape a logline.", external:true },
     { id:"paradigms",   label:"Paradigms",       tag:"Reference", desc:"A reference library of story structure frameworks including Save the Cat, the Hero's Journey, and HartChart." },
     { id:"archetypes",  label:"Archetypes",      tag:"Reference", desc:"A reference for character types, their narrative functions, and how they serve your story's emotional architecture." },
   ];
@@ -1189,7 +1190,7 @@ function HomepagePhase({ onSwitchMode }) {
             return (
               <div
                 key={tool.id}
-                onClick={() => onSwitchMode(tool.id)}
+                onClick={() => tool.external ? window.location.href = `/${tool.id}.html` : onSwitchMode(tool.id)}
                 onMouseEnter={() => setHover(true)}
                 onMouseLeave={() => setHover(false)}
                 style={{
