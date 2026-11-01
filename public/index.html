@@ -970,6 +970,7 @@ function App() {
     <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", background:"var(--bg)", color:"#1C1B1F", fontFamily:"'Nunito',sans-serif" }}>
       <Nav onLogoClick={goHome} />
       {mode==="home" && <HomepagePhase onSwitchMode={switchMode} />}
+      {mode==="synopsis" && <SynopsisPhase callRelay={callRelay} onSwitchMode={switchMode} hidden={mode!=="synopsis"} treatment={treatment} />}
       <VibeWriterPhase callRelay={callRelay} onSwitchMode={switchMode} hidden={mode!=="vibe"} seed={vibeWriterSeed} onSeedConsumed={()=>setVibeWriterSeed(null)} treatment={treatment} refScripts={refScripts} />
       {mode==="beatbuilder" && <BeatBuilderPhase callRelay={callRelay} onSwitchMode={switchMode} refScripts={refScripts} />}
       {mode==="sweetener" && <SceneSweetenerPhase callRelay={callRelay} onSwitchMode={switchMode} treatment={treatment} refScripts={refScripts} />}
