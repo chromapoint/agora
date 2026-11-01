@@ -39,12 +39,6 @@
   --rule: #1C1B1F;
   --line: #1C1B1F;
 }
-/* Children's TV palette — warm butter + sunny amber + coral (only the palette
-   tokens change; neutrals/borders stay the same so the neo-brutalist look holds) */
-html.kids{
-  --bg: #FFF1DC; --bg2: #FFE3C2; --bg3: #FFD59E;
-  --accent: #FFB23E; --accent-soft: #FFE0A8; --ray: #E8553D; --on-accent: #3A1E00;
-}
 html,body,#root{height:100%;}
 body{transition:background 0.25s ease;}
 body{
@@ -515,59 +509,7 @@ FORMATTING NOTES FROM THESE EXAMPLES:
 Now apply the same formatting standard to the writer's notes below.`;
 
 // ── Highland file extraction ───────────────────────────────────────
-async function extractHighlandText(arrayBuffer) {
-  // Highland 2 files are ZIP archives containing a screenplay.fountain or similar
-  if (typeof JSZip === "undefined") throw new Error("JSZip not loaded");
-  const zip = await JSZip.loadAsync(arrayBuffer);
-  // Look for fountain content inside the archive
-  const candidates = Object.keys(zip.files).filter(name =>
-    name.endsWith(".fountain") || name.endsWith(".txt") || name === "screenplay" || name.includes("text")
-  );
-  if (candidates.length === 0) throw new Error("No screenplay content found inside Highland file");
-  // Prefer .fountain, then any text file
-  const target = candidates.find(n => n.endsWith(".fountain")) || candidates[0];
-  return zip.files[target].async("string");
-}
 
-
-const CHARACTER_BREAKDOWN_PROMPT = `You are a story analyst trained in James V. Hart's HartChart method and Jill Chamberlain's Nutshell Technique. You receive a film script or treatment and identify every significant named character.
-
-Use Hart's exact definitions when assigning character types:
-
-HERO: The main character. The person whose shoes you put the audience in. The person we must develop a rooting interest in. The person who will usually have the most screentime and be the focus of the main story and plot.
-
-REFLECTION: The character who, in the beginning, most reflects the Main Character's situation and is around to listen, offer advice, make plans, and generally agrees with the Main Character's agenda. A sidekick, buddy, mentor, parent, or friend who gives the Main Character someone to talk to and express themselves to. Conflict usually arises with Reflection characters as both go through changes in the story.
-
-NEMESIS: Must represent that which the Main Character fears most about themselves. The Nemesis embodies this fear (fear of death does not count). This makes the Nemesis truly threatening to the Main Character. Only by learning to conquer that which the Main Character fears most can the Nemesis be neutralized.
-
-ROMANCE: The most complex because the Romance character can be all three: Reflection, Nemesis, and Romance. This is the character which often embodies the Main Character's desire line. The pursuit of the Visible Tangible Goal often involves the Romance Character either as an obstacle or as the focus of the resolution. Filled with surprises and twists and turns.
-
-SUPPORTING: Any named character who does not fall clearly into the above four types.
-
-ALIASES: Characters are sometimes known by more than one name or nickname in a treatment. If a character is introduced as one name and referred to by another (for example, Richard who is known as Dick, or a character with a formal name and a nickname), treat them as a single character. Use their full name in the CHARACTER field and note the alias in the DESCRIPTION field.
-
-RELATIONSHIPS: Use the exact relationship term the treatment uses. If the treatment says "uncle" write uncle. Do not infer or upgrade the relationship (e.g. do not write "great uncle" if the treatment says "uncle").
-
-For each character, output a block using EXACTLY this format. One field per line. No blank lines between fields within a block:
-
-CHARACTER: [Full name as written in the treatment]
-TYPE: [Exactly one of: Hero / Nemesis / Reflection / Romance / Supporting]
-AGE: [Age or approximate age range if stated or implied in the treatment. Write "Not specified" if not mentioned.]
-PHYSICAL: [Physical appearance as described or implied in the treatment: build, coloring, distinguishing features, how they carry themselves. Write "Not specified" if not described.]
-DESCRIPTION: [One or two sentences on who this person is and how they move through the world: their manner, energy, presence, and what makes them vivid on the page. Note any aliases here.]
-FLAW: [The internal wound, gap, or deficiency this character carries.]
-WANT: [The external, material, ego-driven goal they are actively pursuing on the surface.]
-NEED: [What they truly need to grow or be whole. Usually the opposite of their flaw, and different from their want.]
-OBSTACLES: [Who or what stands between this character and what they want. Name the specific forces, people, or circumstances.]
-RESOLUTION: [Based on the treatment: do they get what they WANT? What they NEED? Is the outcome good or bad for them?]
-ACTOR: [A known actor whose type, physicality, or manner could embody this role. This is a reference for casting tone, not a literal suggestion. Write "Not specified" if no clear type emerges.]
-
-Separate each character block with exactly: ---
-
-List characters in order of narrative importance, Hero first. Include every named character who has any of the following: a speaking moment, a named action, a relationship with another character, or a function that carries story or thematic weight, even if they appear in only one scene. Skip only genuinely unnamed extras with no individual function (e.g. "the crowd", "a waiter").
-Do not use hyphens or em dashes anywhere in the output. Use commas, semicolons, colons, or restructure the sentence instead.
-Output plain text only. No markdown, no asterisks, no bullets.
-Do not add preamble, commentary, or a title. Begin directly with the first CHARACTER: line.`;
 
 const DIALOGUE_SYS = `You are a dialogue editor and script development partner with deep expertise in screenwriting craft. You draw on the principles of David Mamet, William Goldman, Robert McKee, Paddy Chayefsky, and Quentin Tarantino, and you apply two structural frameworks to every exchange: James V. Hart's HartChart method and Jill Chamberlain's Nutshell Technique.
 
@@ -776,47 +718,6 @@ const T = {
 };
 
 // ── Children's TV format template (preschool, 7-min play-driven) ────
-const KIDS_TEMPLATE = {
-  id: "preschool-7min-play-driven",
-  label: "Preschool — 7 min, play-driven",
-  description: "Single-location episode built around an invented game. Derived from the Bluey/Peppa family of formats.",
-  format: { target_runtime_sec: 420, runtime_tolerance_sec: 30, sec_per_page: 45, uses_acts: false, cold_open: true },
-  beats: [
-    { id:"ordinary",     label:"Ordinary moment",              start_pct:0,  end_pct:7,   intent:"Open mid-action on something domestic and mundane. Someone is bored, busy, or mildly annoyed. No preamble, no establishing." },
-    { id:"game_proposed",label:"The game is proposed",         start_pct:7,  end_pct:21,  intent:"A child invents a game, or converts a chore into one. The rules are stated OUT LOUD. Whatever rule is spoken here is the rule that gets bent at the resolution." },
-    { id:"escalation",   label:"Play and escalation",          start_pct:21, end_pct:57,  intent:"An adult is recruited — reluctant first, then fully committed. Comic riffs stack. This is the longest stretch; it should feel like it could go on forever." },
-    { id:"complication", label:"The complication",             start_pct:57, end_pct:71,  intent:"Someone is left out, loses badly, breaks a rule, or an adult's real constraint intrudes (work, exhaustion, an errand). The game is threatened, not abandoned. Stakes are emotional, not physical." },
-    { id:"resolution",   label:"Resolution from inside the game", start_pct:71, end_pct:86, intent:"Solved by CONTINUING to play — bending or reinterpreting the rules stated earlier. Not by stopping and having a talk. This is the signature beat and the one writers get wrong." },
-    { id:"tag",          label:"Tag",                          start_pct:86, end_pct:100, intent:"Flip or call back the opening joke. Short. Often the adult gets the last indignity." },
-  ],
-};
-
-const KIDS_FORMAT_SYS = `FORMAT CONTEXT — you are writing PRESCHOOL CHILDREN'S TELEVISION, not a feature film. Apply this format to EVERYTHING you produce, whatever the task (synopsis, character work, scene rewrite, formatting, ideas).
-
-Use British English spelling and conventions.
-
-TEMPLATE: ${KIDS_TEMPLATE.label} — a single-location episode built around an invented game, in the Bluey/Peppa family.
-
-RUNTIME & SHAPE:
-- Target ~7 minutes (≈420 seconds, ±30). About 45 seconds per page → roughly 9–10 pages.
-- No act structure. Cold open — start mid-action, no establishing.
-- Single location (no more than two sluglines). ONE narrative thread only — seven minutes won't carry a B-plot.
-- At most four speaking characters in a scene; more is hard to track at this age.
-
-SIX-BEAT STRUCTURE (as % of runtime):
-1. Ordinary moment (0–7%): domestic, mundane, someone bored or mildly annoyed. No preamble.
-2. The game is proposed (7–21%): a child invents a game or turns a chore into one. Rules are stated OUT LOUD — whatever rule is spoken becomes the rule bent at the resolution.
-3. Play and escalation (21–57%): an adult is recruited (reluctant, then all-in). Comic riffs stack. Longest stretch; feels like it could go forever.
-4. The complication (57–71%): someone is left out, loses, breaks a rule, or a real adult constraint intrudes. The game is threatened, not abandoned. Stakes are emotional, never physical.
-5. Resolution from inside the game (71–86%): solved by CONTINUING to play — bending or reinterpreting the earlier stated rules. NOT by stopping to have a talk. This is the signature beat writers get wrong.
-6. Tag (86–100%): flip or call back the opening joke. Short. The adult often gets the last indignity.
-
-HARD RULES:
-- The theme is UNSTATED. No adult says the lesson aloud; let the game carry it.
-- The fix comes from INSIDE the play, while the game is still active — never by ending it for a lecture.
-- The parent usually learns as much as the child, or more.
-- Language is simple and age-appropriate for 2–5 year-olds. Warm, playful, bright. Nothing frightening, mature, or violent.`;
-
 // ── Vibe Writer: Treatment mode system prompt ─────────────────────────
 const VIBE_TREATMENT_SYS = `You are a screenwriting consultant helping a writer convert raw notes into a clean treatment. You are a translator and clarifier, not a co-writer.
 
@@ -1017,16 +918,9 @@ const DEFAULT_SEASON = {
 // ── App ────────────────────────────────────────────────────────────
 function App() {
   const [mode, setMode] = useState("home");
-  const [format, setFormat] = useState("feature");   // "feature" | "kids"
   const [vibeWriterSeed, setVibeWriterSeed] = useState(null);
   const [treatment, setTreatment] = useState(null);
   const [refScripts, setRefScripts] = useState([]);
-
-  // Re-skin the whole app when the format toggle flips (see html.kids palette)
-  useEffect(() => {
-    const el = document.documentElement;
-    if (format === "kids") el.classList.add("kids"); else el.classList.remove("kids");
-  }, [format]);
 
   // Auto-load Pipi and Poto reference scripts on startup
   useEffect(() => {
@@ -1054,11 +948,9 @@ function App() {
 
   // ── API relay (calls /api/claude — key never touches the browser) ─
   async function callRelay(system, userMsg, maxTokens=2000, model="claude-sonnet-4-6") {
-    // Every tool inherits the active writing format — feature vs preschool TV
-    const sys = format === "kids" ? (system + "\n\n" + KIDS_FORMAT_SYS) : system;
     const res = await fetch("/api/claude", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model, max_tokens:maxTokens, system:sys, messages:[{role:"user",content:userMsg}] }),
+      body: JSON.stringify({ model, max_tokens:maxTokens, stream:false, system, messages:[{role:"user",content:userMsg}] }),
     });
     let data;
     try { data = await res.json(); } catch(e) {
@@ -1076,16 +968,14 @@ function App() {
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", background:"var(--bg)", color:"#1C1B1F", fontFamily:"'Nunito',sans-serif" }}>
-      <Nav onLogoClick={goHome} format={format} onSetFormat={setFormat} />
-      {mode==="home" && <HomepagePhase onSwitchMode={switchMode} format={format} />}
+      <Nav onLogoClick={goHome} />
+      {mode==="home" && <HomepagePhase onSwitchMode={switchMode} />}
       <VibeWriterPhase callRelay={callRelay} onSwitchMode={switchMode} hidden={mode!=="vibe"} seed={vibeWriterSeed} onSeedConsumed={()=>setVibeWriterSeed(null)} treatment={treatment} refScripts={refScripts} />
-      <CharactersPhase callRelay={callRelay} onSwitchMode={switchMode} hidden={mode!=="characters"} treatment={treatment} />
       {mode==="beatbuilder" && <BeatBuilderPhase callRelay={callRelay} onSwitchMode={switchMode} refScripts={refScripts} />}
       {mode==="sweetener" && <SceneSweetenerPhase callRelay={callRelay} onSwitchMode={switchMode} treatment={treatment} refScripts={refScripts} />}
       {mode==="paradigms"   && <ParadigmsPhase onSwitchMode={switchMode} />}
       {mode==="archetypes"  && <ArchetypesPhase onSwitchMode={switchMode} />}
       {mode==="compass"     && <CompassPhase callRelay={callRelay} onSwitchMode={switchMode} />}
-      {mode==="algorand"    && <AlgorandPhase onSwitchMode={switchMode} />}
       <footer style={{ textAlign:"center", padding:"10px", borderTop:"2px solid #1C1B1F", background:"var(--bg)" }}>
         <span style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.2em", color:"#6B6F76", textTransform:"uppercase" }}>What does your character want but fears to do?</span>
       </footer>
@@ -1267,19 +1157,17 @@ function SynopsisPhase({ callRelay, onSwitchMode, hidden, treatment }) {
 
 
 // ── Homepage ────────────────────────────────────────────────────────
-function HomepagePhase({ onSwitchMode, format }) {
+function HomepagePhase({ onSwitchMode }) {
   const RUST = "var(--ray)";
   const tools = [
-    { id:"characters",  label:"Characters",      tag:"Breakdown", desc:"Upload your treatment or script and get every named character broken down by type, want, need, flaw, and arc." },
     { id:"vibe",        label:"Vibe Writer",     tag:"Format",    desc:"Dump your raw thoughts and notes. Get them back as clean, formatted Fountain with a script assistant alongside." },
     { id:"beatbuilder", label:"Beat Builder",    tag:"Expand",    desc:"Paste an outline or beat-by-beat summary. Get back a detailed scene narrative with dialogue, actions, and sensory detail." },
     { id:"sweetener",   label:"Scene Sweetener", tag:"Rewrite",   desc:"Paste a scene and pick a mode — build tension, add warmth, sharpen conflict, spark chemistry, lighten the mood, or deepen grief." },
     { id:"compass",     label:"Compass",         tag:"Apply",     desc:"Paste your entire screenplay and all Story Compass feedback. Get back a fully revised screenplay with all changes marked in bold." },
-    { id:"algorand",    label:"Algorand",        tag:"Test",      desc:"Test tool to verify deployment." },
     { id:"paradigms",   label:"Paradigms",       tag:"Reference", desc:"A reference library of story structure frameworks including Save the Cat, the Hero's Journey, and HartChart." },
     { id:"archetypes",  label:"Archetypes",      tag:"Reference", desc:"A reference for character types, their narrative functions, and how they serve your story's emotional architecture." },
   ];
-  const tagColor = { Generate:"var(--ray)", Sell:"#7A4E7A", Apply:"#4A7A6B", Analyse:"#5C7A4E", Breakdown:"#4A6B8A", Refine:"#7A5C4E", Format:"#6B5C8A", Reference:"#6B6F76", Structure:"#6B7A4E", Rewrite:"#7A5C4E" };
+  const tagColor = { Generate:"var(--ray)", Sell:"#7A4E7A", Apply:"#4A7A6B", Analyse:"#5C7A4E", Breakdown:"#4A6B8A", Refine:"#7A5C4E", Format:"#6B5C8A", Reference:"#6B6F76", Structure:"#6B7A4E", Rewrite:"#7A5C4E", Transcribe:"#4A7A6B", Review:"#6B4E7A" };
 
   return (
     <main style={{ flex:1, overflowY:"auto" }}>
@@ -1326,7 +1214,7 @@ function HomepagePhase({ onSwitchMode, format }) {
           })}
         </div>
 
-        {format==="kids" ? <PreschoolBeatMap /> : <ActCalculator />}
+        <ActCalculator />
       </div>
     </main>
   );
@@ -1439,55 +1327,7 @@ function ActCalculator() {
   );
 }
 
-// ── Preschool Beat Map (Children's TV format) ──────────────────────
-function PreschoolBeatMap() {
-  const FAINT = "#8B9198";
-  const RUNTIME = KIDS_TEMPLATE.format.target_runtime_sec;         // 420
-  const SPP = KIDS_TEMPLATE.format.sec_per_page;                   // 45
-  const fmtTime = pct => {
-    const s = Math.round(RUNTIME * pct / 100);
-    return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
-  };
-  const beatColors = ["var(--ray)","var(--accent)","var(--bg3)","var(--accent-soft)","var(--ray)","var(--accent)"];
-  const monoSm = { fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.16em", textTransform:"uppercase" };
-
-  return (
-    <div style={{ marginTop:64, borderTop:"2px solid #1C1B1F", paddingTop:48 }}>
-      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:32, flexWrap:"wrap", gap:16 }}>
-        <div>
-          <div style={{ fontFamily:"'Unbounded',sans-serif", fontSize:26, fontWeight:800, letterSpacing:"-1px", color:"#1C1B1F", marginBottom:4 }}>Preschool Beat Map</div>
-          <div style={{ ...monoSm, color:FAINT }}>{KIDS_TEMPLATE.label}</div>
-        </div>
-        <div style={{ ...monoSm, color:FAINT, textAlign:"right" }}>
-          ~7 min · single location<br/>≈ {Math.round(RUNTIME/SPP)} pages
-        </div>
-      </div>
-
-      {/* Segmented beat bar */}
-      <div style={{ display:"flex", borderRadius:12, overflow:"hidden", height:14, border:"2px solid #1C1B1F", boxShadow:"3px 3px 0 #1C1B1F" }}>
-        {KIDS_TEMPLATE.beats.map((b,i) => (
-          <div key={b.id} title={b.label} style={{ width:`${b.end_pct-b.start_pct}%`, background:beatColors[i%beatColors.length], borderRight: i<KIDS_TEMPLATE.beats.length-1?"2px solid #1C1B1F":"none" }} />
-        ))}
-      </div>
-
-      {/* Beat list */}
-      <div style={{ marginTop:28, display:"flex", flexDirection:"column", gap:2 }}>
-        {KIDS_TEMPLATE.beats.map((b,i) => (
-          <div key={b.id} style={{ display:"flex", gap:16, padding:"14px 0", borderBottom:"1px solid rgba(0,0,0,0.1)", alignItems:"flex-start" }}>
-            <div style={{ width:16, height:16, borderRadius:5, background:beatColors[i%beatColors.length], border:"2px solid #1C1B1F", flexShrink:0, marginTop:3 }} />
-            <div style={{ ...monoSm, color:FAINT, width:96, flexShrink:0, marginTop:4 }}>{fmtTime(b.start_pct)}–{fmtTime(b.end_pct)}</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontFamily:"'Unbounded',sans-serif", fontSize:14, fontWeight:700, letterSpacing:"-0.3px", color:"#1C1B1F", marginBottom:4 }}>{b.label}</div>
-              <div style={{ fontFamily:"'Nunito',sans-serif", fontSize:13, fontWeight:600, lineHeight:1.6, color:"#6B6F76" }}>{b.intent}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Nav ────────────────────────────────────────────────────────────
+// ── TreatmentModal ──────────────────────────────────────────────────
 function TreatmentModal({ onLoad, onClose, readAsText, readAsBase64, readAsArrayBuffer, callRelay }) {
   const { useState } = React;
   const [text, setText] = useState("");
@@ -1656,18 +1496,9 @@ function ScriptLibraryModal({ refScripts, onRefScriptsChange, onClose, callRelay
   );
 }
 
-function Nav({ onLogoClick, format, onSetFormat }) {
-  const seg = (val, lbl) => (
-    <button key={val} onClick={()=>onSetFormat(val)} style={{
-      fontFamily:"'Nunito',sans-serif", fontWeight:800, fontSize:11.5, letterSpacing:"-0.2px",
-      padding:"7px 15px", borderRadius:999, cursor:"pointer", border:"none",
-      background: format===val ? "var(--accent)" : "transparent",
-      color: format===val ? "var(--on-accent)" : "#6B6F76",
-      transition:"all 0.12s", whiteSpace:"nowrap",
-    }}>{lbl}</button>
-  );
+function Nav({ onLogoClick }) {
   return (
-    <header style={{ borderBottom:"2px solid #1C1B1F", padding:"16px 28px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap", background:"var(--bg2)" }}>
+    <header style={{ borderBottom:"2px solid #1C1B1F", padding:"16px 28px", display:"flex", alignItems:"center", justifyContent:"flex-start", gap:16, flexWrap:"wrap", background:"var(--bg2)" }}>
       <div onClick={onLogoClick} style={{ display:"flex", alignItems:"center", gap:16, cursor:"pointer" }}>
         <div style={{ width:40, height:40, background:"var(--accent)", border:"2.5px solid #1C1B1F", borderRadius:12, boxShadow:"4px 4px 0 #1C1B1F", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -1679,10 +1510,6 @@ function Nav({ onLogoClick, format, onSetFormat }) {
           <span style={{ fontFamily:"'Unbounded',sans-serif", fontSize:24, letterSpacing:"-1px", color:"#1C1B1F", fontWeight:800 }}>Agora</span>
           <div style={{ fontFamily:"'Nunito',sans-serif", fontSize:11, fontWeight:700, letterSpacing:"0.02em", color:"#6B6F76", marginTop:2 }}>Where your story finds its pulse.</div>
         </div>
-      </div>
-      <div style={{ display:"flex", gap:5, background:"var(--card)", border:"2.5px solid #1C1B1F", borderRadius:999, padding:5, boxShadow:"3px 3px 0 #1C1B1F" }}>
-        {seg("feature","Feature")}
-        {seg("kids","Children's TV")}
       </div>
     </header>
   );
@@ -1701,7 +1528,6 @@ function Spinner() {
 // ── Mode selector tabs ─────────────────────────────────────────────
 const TABS = [
   { id:"vibe",        label:"Vibe Writer"      },
-  { id:"characters", label:"Characters"       },
   { id:"synopsis",   label:"Synopsis"         },
   { id:"sweetener",  label:"Scene Sweetener"  },
   { id:"paradigms",   label:"Paradigms"        },
@@ -2664,6 +2490,276 @@ Write in plain prose only. No markdown, no headers, no bullets. Just clean sente
   );
 }
 
+
+
+` : ""}
+
+Please analyze these whiteboard photo(s) and extract:
+1. The overall story structure (acts, major turning points)
+2. Key beats and plot points (in order)
+3. Character names and their roles/arcs
+4. Thematic elements and tone
+5. Any specific dialogue, situations, or imagery noted
+
+Format the output as a TREATMENT in this structure:
+
+TITLE (or "UNTITLED")
+
+LOGLINE
+[One or two sentence summary of the story]
+
+SYNOPSIS
+[2-3 paragraph narrative overview of the story from beginning to end, covering all major beats and emotional arc]
+
+CHARACTER BREAKDOWN
+[For each named character: Name | Role | Arc/Need]
+
+KEY BEATS
+[Numbered list of major plot points in order]
+
+TONE & THEMES
+[Brief description of tone and thematic elements]
+
+Output ONLY the treatment text. No preamble, no metadata.`
+        },
+        ...images.slice(0, 3).map(img => ({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.mediaType,
+            data: img.base64
+          }
+        }))
+      ];
+
+      const result = await callRelay(
+        "You are a story structure expert. Transcribe whiteboard story notes into a clear treatment.",
+        userContent,
+        3000
+      );
+      setTreatment(result.trim());
+    } catch (e) {
+      setError("Analysis failed: " + e.message);
+    }
+    setLoading(false);
+  }
+
+  function removeImage(idx) {
+    setImages(images.filter((_, i) => i !== idx));
+  }
+
+  function copyTreatment() {
+    navigator.clipboard.writeText(treatment).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }
+
+  return (
+    <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg)", color: "#1C1B1F" }}>
+      <div style={{ padding: "16px 28px 0", flexShrink: 0 }}>
+        <ModeSelector mode="whiteboard" onSwitch={onSwitchMode} compact />
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "28px" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ marginBottom: 48 }}>
+            <h2 style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 32, fontWeight: 700, marginBottom: 8, color: "#1C1B1F" }}>Whiteboard Reader</h2>
+            <p style={{ fontSize: 14, color: FAINT, fontFamily: "'Nunito',sans-serif" }}>Photograph your whiteboard notes and convert them into a structured treatment for Vibe Writer.</p>
+          </div>
+
+          {/* Context notes */}
+          <div style={{ marginBottom: 32 }}>
+            <label style={{ display: "block", fontFamily: "'Courier Prime',monospace", fontSize: 9, letterSpacing: "0.24em", color: FAINT, textTransform: "uppercase", marginBottom: 10 }}>Optional Context Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add context for the analysis — story ideas, character names, plot direction, tone notes, etc."
+              style={{
+                width: "100%",
+                minHeight: 100,
+                padding: "12px 14px",
+                fontFamily: "'Nunito',sans-serif",
+                fontSize: 14,
+                border: "2px solid #1C1B1F",
+                borderRadius: 12,
+                boxShadow: "3px 3px 0 #1C1B1F",
+                background: "var(--card)",
+                color: "#1C1B1F",
+                resize: "vertical",
+                marginBottom: 32
+              }}
+            />
+          </div>
+
+          {/* Image upload area */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+            onClick={() => fileRef.current?.click()}
+            style={{
+              border: `2px dashed ${dragOver ? RUST : LINE}`,
+              borderRadius: 16,
+              padding: "40px 20px",
+              textAlign: "center",
+              cursor: "pointer",
+              background: dragOver ? "rgba(35,100,170,0.05)" : "transparent",
+              transition: "all 0.25s",
+              marginBottom: 32
+            }}
+          >
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📸</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4, color: "#1C1B1F" }}>Drop whiteboard photos here</div>
+            <div style={{ fontSize: 12, color: FAINT, fontFamily: "'Courier Prime',monospace" }}>or click to select • supports multiple images</div>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => handleFiles(e.target.files)}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          {/* Image thumbnails */}
+          {images.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ fontFamily: "'Courier Prime',monospace", fontSize: 9, letterSpacing: "0.24em", color: FAINT, textTransform: "uppercase", marginBottom: 12 }}>{images.length} Image{images.length !== 1 ? "s" : ""} Selected</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 12 }}>
+                {images.map((img, idx) => (
+                  <div key={idx} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "2px solid #1C1B1F" }}>
+                    <img
+                      src={`data:${img.mediaType};base64,${img.base64}`}
+                      alt={img.name}
+                      style={{ width: "100%", height: 100, objectFit: "cover" }}
+                    />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                      style={{
+                        position: "absolute",
+                        top: 4,
+                        right: 4,
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        background: "rgba(0,0,0,0.7)",
+                        color: "white",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && <div style={{ color: "var(--accent)", fontSize: 13, marginBottom: 16, fontStyle: "italic" }}>{error}</div>}
+
+          {/* Analyze button */}
+          {images.length > 0 && !treatment && (
+            <div style={{ marginBottom: 32 }}>
+              <button
+                onClick={analyzeWhiteboard}
+                disabled={loading}
+                style={{
+                  padding: "12px 24px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: "'Nunito',sans-serif",
+                  background: loading ? "#ccc" : RUST,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  cursor: loading ? "default" : "pointer",
+                  opacity: loading ? 0.7 : 1,
+                  transition: "opacity 0.2s"
+                }}
+              >
+                {loading ? "Analyzing…" : "Convert to Treatment"}
+              </button>
+            </div>
+          )}
+
+          {/* Output treatment */}
+          {treatment && (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${LINE}` }}>
+                <span style={{ fontFamily: "'Courier Prime',monospace", fontSize: 9, letterSpacing: "0.24em", color: FAINT, textTransform: "uppercase" }}>Treatment Output</span>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={copyTreatment}
+                    style={{
+                      fontFamily: "'Courier Prime',monospace",
+                      fontSize: 9,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: copied ? RUST : FAINT,
+                      transition: "color 0.15s"
+                    }}
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+              </div>
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.5)",
+                  border: "2px solid #1C1B1F",
+                  borderRadius: 12,
+                  padding: "16px 18px",
+                  fontFamily: "'Nunito',sans-serif",
+                  fontSize: 13,
+                  lineHeight: 1.7,
+                  color: "#1C1B1F",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  marginBottom: 16
+                }}
+              >
+                {treatment}
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(treatment).then(() => {
+                    onSwitchMode("vibe");
+                  });
+                }}
+                style={{
+                  padding: "12px 24px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: "'Nunito',sans-serif",
+                  background: RUST,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  transition: "opacity 0.2s"
+                }}
+              >
+                → Use in Vibe Writer
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function ParadigmsPhase({ onSwitchMode }) {
   const RUST = "var(--ray)";
   const MUTED = "#6B6F76";
@@ -2870,404 +2966,6 @@ function ArchetypesPhase({ onSwitchMode }) {
   );
 }
 
-function CharactersPhase({ callRelay, onSwitchMode, hidden, treatment }) {
-  const [phase, setPhase] = React.useState("upload");
-  const [loading, setLoading] = React.useState(false);
-  const [loadMsg, setLoadMsg] = React.useState("");
-  const [loadErr, setLoadErr] = React.useState("");
-  const [loadProgress, setLoadProgress] = React.useState(0);
-  const [dragOver, setDragOver] = React.useState(false);
-  const [characters, setCharacters] = React.useState([]);
-  const [scannedNames, setScannedNames] = React.useState([]);
-  const [selectedNames, setSelectedNames] = React.useState([]);
-  const [scriptText, setScriptText] = React.useState("");
-  React.useEffect(() => {
-    if (!loading) { setLoadProgress(0); return; }
-    setLoadProgress(2);
-    const iv = setInterval(() => {
-      setLoadProgress(p => {
-        if (p >= 88) return p + 0.15;
-        if (p >= 70) return p + 0.6;
-        if (p >= 45) return p + 1.2;
-        return p + 2.5;
-      });
-    }, 120);
-    return () => clearInterval(iv);
-  }, [loading]);
-  const [msgs, setMsgs] = React.useState([]);
-  const [chatInput, setChatInput] = React.useState("");
-  const [chatLoading, setChatLoading] = React.useState(false);
-  const fileRef = React.useRef(null);
-  const chatEndRef = React.useRef(null);
-  const RUST="var(--ray)", FAINT="#8B9198", LINE="rgba(0,0,0,0.08)", BG="var(--bg)", BG2="var(--bg2)";
-
-  React.useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior:"smooth" }); }, [msgs]);
-
-  function readAsText(file) {
-    return new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=()=>rej(new Error("Read failed")); r.readAsText(file); });
-  }
-  function readAsBase64(file) {
-    return new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result.split(",")[1]); r.onerror=()=>rej(new Error("Read failed")); r.readAsDataURL(file); });
-  }
-  function readAsArrayBuffer(file) {
-    return new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=()=>rej(new Error("Read failed")); r.readAsArrayBuffer(file); });
-  }
-
-  async function extractText(file) {
-    const ext = file.name.split(".").pop().toLowerCase();
-    if (["txt","fountain","md"].includes(ext)) return readAsText(file);
-    if (ext === "highland") { const buf = await readAsArrayBuffer(file); try { return await extractHighlandText(buf); } catch(e) { return readAsText(file); } }
-    if (ext === "pdf") {
-      setLoadMsg("Reading PDF…");
-      if (typeof pdfjsLib === "undefined") throw new Error("PDF reader not loaded — refresh and try again");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdf.worker.min.js";
-      const buf = await readAsArrayBuffer(file);
-      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-      const total = Math.min(pdf.numPages, 115);
-      const pages = [];
-      for (let p = 1; p <= total; p++) {
-        if (p % 15 === 1) setLoadMsg(`Reading PDF… (${p}/${total})`);
-        const page = await pdf.getPage(p);
-        const content = await page.getTextContent();
-        pages.push(content.items.map(i => i.str).join(" "));
-      }
-      return pages.join("\n");
-    }
-    if (ext === "docx") {
-      if (typeof mammoth === "undefined") throw new Error("docx support not loaded — try .txt or .pdf");
-      const buf = await readAsArrayBuffer(file);
-      const result = await mammoth.extractRawText({ arrayBuffer: buf });
-      return result.value;
-    }
-    if (ext === "doc") throw new Error(".doc not supported — save as .docx or .txt");
-    return readAsText(file);
-  }
-
-  function parseCharacters(text) {
-    const blocks = text.split(/\n?---+\n?/).filter(b => b.trim() && /^CHARACTER:/im.test(b));
-    return blocks.map(block => {
-      const get = (key) => {
-        const m = block.match(new RegExp("^" + key + ":\\s*(.+)", "im"));
-        return m ? m[1].trim() : "";
-      };
-      return {
-        name: get("CHARACTER"), type: get("TYPE"), age: get("AGE"),
-        physical: get("PHYSICAL"), description: get("DESCRIPTION"),
-        flaw: get("FLAW"), want: get("WANT"), need: get("NEED"),
-        obstacles: get("OBSTACLES"), resolution: get("RESOLUTION"),
-        actor: get("ACTOR"),
-      };
-    }).filter(c => c.name);
-  }
-
-  async function handleFile(file) {
-    if (!file) return;
-    setLoadErr(""); setLoading(true); setLoadMsg("Reading file…");
-    try {
-      const text = await extractText(file);
-      if (!text?.trim()) throw new Error("File appears to be empty");
-      setScriptText(text);
-      setLoadMsg("Scanning for characters…");
-      const SCAN_PROMPT = "List every named character who speaks or is named in this script excerpt. Output only their names, one per line. No numbers, no descriptions, no punctuation. Just the name. Omit unnamed extras like A GUARD or WAITER.";
-      const CHUNK = 45000;
-      const chunks = [];
-      for (let i = 0; i < text.length; i += CHUNK) chunks.push(text.slice(i, i + CHUNK));
-      const scanResults = await Promise.all(chunks.map(chunk =>
-        callRelay(SCAN_PROMPT, "EXCERPT:\n\n" + chunk, 600, "claude-haiku-4-5-20251001").catch(() => "")
-      ));
-      const nameSet = new Set();
-      for (const result of scanResults) {
-        result.split("\n").map(n => n.trim()).filter(n => n.length > 1 && n.length < 60).forEach(n => nameSet.add(n));
-      }
-      const names = [...nameSet].sort((a, b) => a.localeCompare(b));
-      if (names.length === 0) throw new Error("No characters found — check the file");
-      setScannedNames(names);
-      setSelectedNames(names);
-      setPhase("select");
-    } catch(e) { setLoadErr(e.message); }
-    setLoading(false);
-  }
-
-  async function streamBreakdown(selectedList) {
-    const res = await fetch("/api/claude", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-haiku-4-5-20251001", max_tokens:6000, stream:true,
-        system: CHARACTER_BREAKDOWN_PROMPT,
-        messages:[{ role:"user", content:`Analyze ONLY these characters (ignore all others): ${selectedList.join(", ")}\n\nSCRIPT:\n\n` + scriptText.slice(0,150000) }],
-      }),
-    });
-    if (!res.ok) {
-      let msg = `Server error (${res.status})`;
-      try { const d = await res.json(); msg = (typeof d.error==="string"?d.error:d.error?.message) || msg; } catch {}
-      throw new Error(msg);
-    }
-    let raw = "";
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split("\n");
-      buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        const chunk = line.slice(6).trim();
-        if (chunk === "[DONE]") continue;
-        try {
-          const evt = JSON.parse(chunk);
-          if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") raw += evt.delta.text;
-        } catch {}
-      }
-    }
-    return raw;
-  }
-
-  async function handleGenerate() {
-    if (selectedNames.length === 0) return;
-    setLoadErr(""); setLoading(true); setLoadMsg("Generating breakdowns…");
-    try {
-      const raw = await streamBreakdown(selectedNames);
-      const chars = parseCharacters(raw);
-      if (chars.length === 0) throw new Error("No character data returned — try again");
-      setCharacters(chars); setPhase("results");
-    } catch(e) { setLoadErr(e.message); }
-    setLoading(false);
-  }
-
-  async function handleChat(overrideMsg) {
-    const q = (overrideMsg || chatInput).trim();
-    if (!q || chatLoading) return;
-    if (!overrideMsg) setChatInput("");
-    const next = [...msgs, { role:"user", text:q }];
-    setMsgs([...next, { role:"assistant", text:"Thinking…", loading:true }]);
-    setChatLoading(true);
-    try {
-      const ctx = [];
-      if (treatment) ctx.push("TREATMENT:\n" + treatment.text.slice(0, 40000));
-      if (characters.length > 0) {
-        const charLines = characters.map(c =>
-          [c.name+" ("+c.type+")", "Flaw: "+c.flaw, "Want: "+c.want, "Need: "+c.need, "Obstacles: "+c.obstacles, "Resolution: "+c.resolution].join("\n")
-        ).join("\n\n");
-        ctx.push("CHARACTER BREAKDOWN:\n" + charLines);
-      }
-      const history = next.map(m=>`${m.role==="user"?"Writer":"Assistant"}: ${m.text}`).join("\n\n");
-      const sys = `You are a story development assistant helping a screenwriter understand and develop their characters. You are knowledgeable about James V. Hart's HartChart method and Jill Chamberlain's Nutshell Technique. Draw on character types (Hero, Nemesis, Reflection, Romance, Mentor), the want versus need distinction, the protagonist's flaw, and how each character serves the story's structural engine. Be direct, specific, and grounded in the actual characters provided. Write in plain prose only. No markdown.` + (ctx.length ? "\n\n" + ctx.join("\n\n") : "");
-      const reply = await callRelay(sys, history + "\nAssistant:", 2500);
-      setMsgs([...next, { role:"assistant", text:reply.trim() }]);
-    } catch(e) { setMsgs([...next, { role:"assistant", text:"Error: "+e.message }]); }
-    setChatLoading(false);
-  }
-
-  return (
-    <main style={{ flex:1, display:hidden?"none":"flex", flexDirection:"column", overflow:"hidden" }}>
-      <div style={{ padding:"14px 28px 0", flexShrink:0 }}>
-        <ModeSelector mode="characters" onSwitch={onSwitchMode} compact />
-      </div>
-
-      {phase === "select" && (
-        <div style={{ flex:1, display:"flex", flexDirection:"column", padding:"32px 28px", overflowY:"auto" }}>
-          <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.24em", color:FAINT, textTransform:"uppercase", marginBottom:6 }}>
-            {scannedNames.length} character{scannedNames.length!==1?"s":""} found
-          </div>
-          <div style={{ fontFamily:"'Unbounded',sans-serif", fontStyle:"italic", fontSize:16, color:"#2A2D32", marginBottom:24 }}>Select which to analyse</div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:28 }}>
-            {scannedNames.map(name => {
-              const sel = selectedNames.includes(name);
-              return (
-                <button key={name} onClick={()=>setSelectedNames(prev=>sel?prev.filter(n=>n!==name):[...prev,name])}
-                  style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.12em", padding:"5px 14px", borderRadius:22, background:sel?RUST:"transparent", color:sel?"var(--bg)":FAINT, border:`1px solid ${sel?RUST:"rgba(0,0,0,0.15)"}`, cursor:"pointer", transition:"all 0.15s" }}>
-                  {name}
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-            <button style={T.btn(true, selectedNames.length===0||loading)} disabled={selectedNames.length===0||loading} onClick={handleGenerate}>
-              {loading ? loadMsg : `Generate ${selectedNames.length} character${selectedNames.length!==1?"s":""}`}
-            </button>
-            <button style={T.btn(false,false)} onClick={()=>setSelectedNames(scannedNames)}>Select all</button>
-            <button style={T.btn(false,false)} onClick={()=>setSelectedNames([])}>Clear</button>
-            <button style={T.btn(false,false)} onClick={()=>{setPhase("upload");setScannedNames([]);setSelectedNames([]);setLoadErr("");}}>← New script</button>
-          </div>
-          {loadErr && <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:10, color:RUST, marginTop:14, lineHeight:1.5 }}>{loadErr}</div>}
-        </div>
-      )}
-
-      {phase === "upload" ? (
-        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 32px" }}>
-          <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.28em", color:FAINT, textTransform:"uppercase", marginBottom:24 }}>Upload Treatment</div>
-          <div
-            onDragOver={e=>{e.preventDefault();setDragOver(true);}}
-            onDragLeave={()=>setDragOver(false)}
-            onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files?.[0];if(f)handleFile(f);}}
-            onClick={()=>!loading&&fileRef.current?.click()}
-            style={{ width:"100%", maxWidth:440, border:`1.5px dashed ${dragOver?"var(--ray)":"rgba(0,0,0,0.18)"}`, borderRadius:14, padding:"40px 28px", textAlign:"center", cursor:loading?"default":"pointer", background:dragOver?"rgba(35,100,170,0.03)":"transparent", transition:"all 0.2s" }}
-          >
-            {loading ? (
-              <>
-                <Spinner/>
-                <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:10, letterSpacing:"0.14em", color:FAINT, marginTop:14, marginBottom:18, textTransform:"uppercase" }}>{loadMsg}</div>
-                <div style={{ width:"100%", height:2, background:"rgba(0,0,0,0.08)", borderRadius:8, overflow:"hidden" }}>
-                  <div style={{ height:"100%", width: Math.min(loadProgress, 98) + "%", background:RUST, borderRadius:8, transition:"width 0.12s linear" }} />
-                </div>
-                <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, color:FAINT, marginTop:6, letterSpacing:"0.1em" }}>{Math.round(Math.min(loadProgress, 98))}%</div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize:26, color:FAINT, marginBottom:12, opacity:0.6 }}>↑</div>
-                <div style={{ fontFamily:"'Unbounded',sans-serif", fontStyle:"italic", fontSize:18, color:"#1C1B1F", marginBottom:8 }}>Drop your screenplay here</div>
-                <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.18em", color:FAINT, textTransform:"uppercase" }}>.txt · .pdf · .docx · .highland · .fountain</div>
-                {loadErr && <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:10, color:RUST, marginTop:14, lineHeight:1.5 }}>{loadErr}</div>}
-              </>
-            )}
-            <input ref={fileRef} type="file" accept=".txt,.pdf,.docx,.doc,.highland,.fountain,.md" onChange={e=>{const f=e.target.files?.[0];if(f)handleFile(f);e.target.value="";}} style={{ display:"none" }} />
-          </div>
-          <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.12em", color:FAINT, marginTop:20, lineHeight:1.8, textAlign:"center", maxWidth:380 }}>
-            Agora reads your treatment through Hart's lens — extracting every character's flaw, want, need, obstacles, and how their arc resolves.
-          </div>
-        </div>
-      ) : (
-        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 28px 10px", flexShrink:0, borderBottom:"1px solid "+LINE }}>
-            <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.24em", color:FAINT, textTransform:"uppercase" }}>
-              {characters.length} character{characters.length!==1?"s":""}
-            </div>
-            <div style={{ display:"flex", gap:8 }}>
-              <button style={T.btn(false,false)} onClick={async ()=>{
-                const md = characters.map(c => {
-                  const hdr = `**${c.name} — ${c.type}**`;
-                  const lines = [hdr,""];
-                  if (c.age && c.age !== "Not specified") lines.push(`**AGE:** ${c.age}`, "");
-                  if (c.physical && c.physical !== "Not specified") lines.push(`**PHYSICAL:** ${c.physical}`, "");
-                  lines.push(c.description,"",`**FLAW:** ${c.flaw}`,"",`**WANT:** ${c.want}`,"",`**NEED:** ${c.need}`,"",`**OBSTACLES:** ${c.obstacles}`,"",`**RESOLUTION:** ${c.resolution}`);
-                  if (c.actor && c.actor !== "Not specified") lines.push("", `**TYPE REFERENCE:** ${c.actor}`);
-                  lines.push("---");
-                  return lines.join("\n");
-                }).join("\n\n");
-                const infoJson = JSON.stringify({"com.quoteunquoteapps.highland2":{"currentTabIndex":-1,"printParagraphNumbers":false,"showSynopses":false,"sidebarWidth":0,"templateName":"Screenplay","version":3},"transient":false,"type":"com.quoteunquoteapps.fountain","version":2},null,2);
-                const navJson = JSON.stringify({"sceneHeaders":true,"referenceLinks":true,"images":true,"synopses":true,"markers":true,"links":true,"sectionHeaders":true,"notes":true,"includedFiles":true});
-                const zip = new JSZip();
-                const tb = zip.folder("characters.textbundle");
-                tb.file("text.md", md);
-                tb.file("info.json", infoJson);
-                tb.file("navigatorFilters.json", navJson);
-                tb.file("scratchpad.txt", "");
-                const blob = await zip.generateAsync({type:"blob"});
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = "characters.highland";
-                a.click();
-                URL.revokeObjectURL(a.href);
-              }}>Download .highland</button>
-              <button style={T.btn(false,false)} onClick={()=>{setPhase("select");setCharacters([]);setLoadErr("");}}>← Reselect</button>
-              <button style={T.btn(false,false)} onClick={()=>{setPhase("upload");setCharacters([]);setScannedNames([]);setSelectedNames([]);setScriptText("");setLoadErr("");}}>New screenplay</button>
-            </div>
-          </div>
-          <div style={{ flex:1, overflowY:"auto", padding:"20px 28px" }}>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(340px, 1fr))", gap:16 }}>
-              {characters.map((c,i) => {
-                const typeColor = c.type==="Hero" ? RUST : c.type==="Nemesis" ? "var(--on-accent)" : c.type==="Romance" ? "#8A4A7A" : c.type==="Reflection" ? "#2A5A7A" : FAINT;
-                return (
-                  <div key={i} style={{ padding:"20px 22px", borderRadius:12, border:"1px solid "+LINE, background:"#FFFFFF", display:"flex", flexDirection:"column", gap:12 }}>
-                    <div style={{ display:"flex", alignItems:"baseline", gap:10, flexWrap:"wrap" }}>
-                      <span style={{ fontFamily:"'Unbounded',sans-serif", fontSize:22, fontWeight:600, color:"#1C1B1F" }}>{c.name}</span>
-                      {c.type && <span style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:typeColor, border:"1px solid", borderColor:typeColor, padding:"2px 8px", borderRadius:22 }}>{c.type}</span>}
-                      {c.age && c.age !== "Not specified" && <span style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, color:FAINT }}>{c.age}</span>}
-                    </div>
-                    {c.physical && c.physical !== "Not specified" && (
-                      <div style={{ fontSize:12, color:FAINT, lineHeight:1.6, fontStyle:"italic" }}>{c.physical}</div>
-                    )}
-                    {c.description && <div style={{ fontSize:13, color:"#2A2D32", lineHeight:1.65 }}>{c.description}</div>}
-                    {c.flaw && (
-                      <div style={{ borderLeft:"2px solid "+RUST, paddingLeft:10 }}>
-                        <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:RUST, marginBottom:3 }}>Flaw</div>
-                        <div style={{ fontSize:12, color:"#3A3D42", lineHeight:1.55 }}>{c.flaw}</div>
-                      </div>
-                    )}
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                      {c.want && (
-                        <div>
-                          <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:FAINT, marginBottom:3 }}>Want</div>
-                          <div style={{ fontSize:12, color:"#3A3D42", lineHeight:1.55 }}>{c.want}</div>
-                        </div>
-                      )}
-                      {c.need && (
-                        <div>
-                          <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:FAINT, marginBottom:3 }}>Need</div>
-                          <div style={{ fontSize:12, color:"#3A3D42", lineHeight:1.55 }}>{c.need}</div>
-                        </div>
-                      )}
-                    </div>
-                    {c.obstacles && (
-                      <div>
-                        <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:FAINT, marginBottom:3 }}>Obstacles</div>
-                        <div style={{ fontSize:12, color:"#3A3D42", lineHeight:1.55 }}>{c.obstacles}</div>
-                      </div>
-                    )}
-                    {c.resolution && (
-                      <div style={{ borderTop:"1px solid "+LINE, paddingTop:10 }}>
-                        <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:FAINT, marginBottom:3 }}>Resolution</div>
-                        <div style={{ fontSize:12, color:"#3A3D42", lineHeight:1.55, fontStyle:"italic" }}>{c.resolution}</div>
-                      </div>
-                    )}
-                    {c.actor && c.actor !== "Not specified" && (
-                      <div style={{ borderTop:"1px solid "+LINE, paddingTop:10 }}>
-                        <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:8, letterSpacing:"0.22em", textTransform:"uppercase", color:FAINT, marginBottom:3 }}>Type Reference</div>
-                        <div style={{ fontSize:12, color:"#3A3D42", lineHeight:1.55 }}>{c.actor}</div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Character Assistant ── */}
-      <div style={{ borderTop:"1px solid "+LINE, display:"flex", flexDirection:"column", height:400, flexShrink:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 28px 0", flexShrink:0 }}>
-          <span style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.24em", color:FAINT, textTransform:"uppercase" }}>Character Assistant</span>
-          <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
-            {characters.length > 0 && !chatLoading && (
-              <button onClick={()=>handleChat("Give me a full character analysis. For each character, assess how well their flaw, want, and need are differentiated — are the want and need in genuine tension? Identify which character best embodies the Nemesis role and whether they mirror the Hero's deepest fear. Flag any characters whose arc is unclear or underdeveloped, and tell me which Hart relationships (Hero/Nemesis, Hero/Reflection, Hero/Romance) are the strongest and which need work.")} style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.12em", textTransform:"uppercase", background:"none", border:"2px solid var(--ray)", cursor:"pointer", color:RUST, padding:"3px 8px", borderRadius:10 }}>Analyse Characters</button>
-            )}
-            {msgs.length > 0 && <button onClick={()=>setMsgs([])} style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, color:FAINT, background:"none", border:"none", cursor:"pointer", padding:"2px 6px", borderRadius:10 }}>Clear</button>}
-          </div>
-        </div>
-        <div style={{ flex:1, overflowY:"auto", padding:"8px 28px", display:"flex", flexDirection:"column", gap:8 }}>
-          {msgs.length === 0 && (
-            <div style={{ color:FAINT, fontStyle:"italic", fontSize:12, margin:"auto", textAlign:"center", lineHeight:1.7 }}>
-              <div style={{ fontFamily:"'Courier Prime',monospace", fontSize:9, letterSpacing:"0.12em", textTransform:"uppercase", color:FAINT, marginBottom:6 }}>Ask about any character</div>
-              "Is the want/need tension strong enough?" · "Who is the real Nemesis?" · "How should this character's arc resolve?"
-            </div>
-          )}
-          {msgs.map((m,i)=>(
-            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:m.role==="user"?"flex-end":"flex-start", maxWidth:"80%", alignSelf:m.role==="user"?"flex-end":"flex-start" }}>
-              <div style={{ padding:"8px 12px", borderRadius:14, fontSize:12, lineHeight:1.55, whiteSpace:"pre-wrap", background:m.role==="user"?"#1C1B1F":"#FFFFFF", color:m.role==="user"?"var(--bg)":"#1C1B1F", border:m.role==="assistant"?"1px solid "+LINE:"none", fontStyle:m.loading?"italic":"normal", opacity:m.loading?0.6:1 }}>{m.text}</div>
-            </div>
-          ))}
-          {chatLoading && <Spinner/>}
-          <div ref={chatEndRef}/>
-        </div>
-        <div style={{ display:"flex", gap:8, padding:"8px 28px 12px", flexShrink:0 }}>
-          <textarea
-            value={chatInput}
-            onChange={e=>setChatInput(e.target.value)}
-            onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleChat(null);} }}
-            placeholder="Ask about a character or the whole ensemble…"
-            rows={1}
-            style={{ flex:1, borderRadius:12, border:"2px solid #1C1B1F", background:"transparent", color:"#1C1B1F", fontFamily:"'Nunito',sans-serif", fontSize:12, lineHeight:1.5, padding:"8px 10px", resize:"none", outline:"none", maxHeight:72, overflowY:"auto" }}
-          />
-          <button disabled={!chatInput.trim()||chatLoading} onClick={()=>handleChat(null)} style={T.btn(true,!chatInput.trim()||chatLoading)}>Send</button>
-        </div>
-      </div>
-    </main>
-  );
-}
 
 // ── Beat Builder: Outline Expander ──────────────────────────────────────
 function BeatBuilderPhase({ callRelay, onSwitchMode, refScripts }) {
@@ -3284,25 +2982,23 @@ function BeatBuilderPhase({ callRelay, onSwitchMode, refScripts }) {
     setError("");
     setExpanded("");
     try {
-      let systemPrompt = `Expand the outline into rich narrative. Keep all beats. Use British English, prose not screenplay.
+      let systemPrompt = `You are expanding a multi-section outline into ONE complete story with a SINGLE definitive ending. STRUCTURE: Earlier sections should be BRIEF RECAPS (1-2 scenes, concise). The FINAL section should be FULLY EXPANDED with complete narrative detail and resolution. The story MUST reach its ending. Do not elaborate early—save all narrative detail for the final section.`;
+      if (refScripts && refScripts.length > 0) systemPrompt += ` Tone: ${refScripts.map(s=>s.name).join(", ")}`;
 
-CRITICAL RULES:
-1. You MUST complete the entire narrative from start to finish. No mid-sentence cutoffs.
-2. As you reach the resolution of the story, begin wrapping up. Don't extend past the natural conclusion.
-3. Each beat should be vivid but concise. Prioritize story completion over maximum elaboration.
-4. End with blank line then "END".`;
-      if (refScripts && refScripts.length > 0) systemPrompt += `\n\nREFERENCE SCRIPTS:\n${refScripts.map(s=>`--- ${s.name} ---\n${s.text.slice(0,4000)}`).join("\n\n")}\n\nCapture the style and tone of the reference scripts.`;
-
-      const userMsg = `Expand this outline into a complete scene narrative:\n\n${outline}`;
+      const userMsg = `Expand this outline. CRITICAL STRUCTURE:
+- Earlier sections: Brief, summary-like (not elaborate)
+- Final section: FULLY DEVELOPED with complete ending
+- The story MUST reach "Case closed" or final resolution
+\n\n${outline}`;
 
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
-          max_tokens: 70000,
+          max_tokens: 40000,
           temperature: 0.7,
-          stream: true,
+          stream: false,
           system: systemPrompt,
           messages: [{ role: "user", content: userMsg }],
         }),
@@ -3319,31 +3015,16 @@ CRITICAL RULES:
         return;
       }
 
-      let result = "";
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const chunk = line.slice(6).trim();
-          if (chunk === "[DONE]") continue;
-          try {
-            const evt = JSON.parse(chunk);
-            if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") result += evt.delta.text;
-          } catch {}
-        }
-      }
+      const data = await res.json();
+      let result = data.content?.[0]?.text || "";
       result = result.trim();
       if (!result) {
         setError("Empty response generated");
         return;
       }
+
+      if (result.includes("\nEND")) result = result.substring(0, result.lastIndexOf("\nEND")).trim();
+      if (result.endsWith("END")) result = result.slice(0, -3).trim();
 
       setExpanded(result);
     } catch (e) {
@@ -3373,7 +3054,7 @@ CRITICAL RULES:
     <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", maxWidth: 900, margin: "0 auto", width: "100%" }}>
       <ModeSelector mode="beatbuilder" onSwitch={onSwitchMode} compact={false} />
 
-      <h2 style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 24, letterSpacing: "-0.5px" }}>Beat Builder</h2>
+      <h2 style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 24, letterSpacing: "-0.5px" }}>Beat Builder v2</h2>
       <p style={{ fontSize: 14, color: FAINT, marginBottom: 20, lineHeight: 1.6 }}>Paste an outline or beat-by-beat summary. Get back a detailed scene narrative with dialogue, actions, and sensory detail.</p>
 
       {/* Outline input */}
@@ -3652,21 +3333,6 @@ Apply the Story Compass feedback to revise this screenplay. Mark all changes in 
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function AlgorandPhase({ onSwitchMode }) {
-  const FAINT = "#8B9198";
-
-  return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 60px", maxWidth: 900, margin: "0 auto", width: "100%" }}>
-      <ModeSelector mode="algorand" onSwitch={onSwitchMode} compact={false} />
-      <h2 style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 24, letterSpacing: "-0.5px" }}>Algorand</h2>
-      <p style={{ fontSize: 14, color: FAINT, marginBottom: 20, lineHeight: 1.6 }}>This is a test tool to verify deployment is working correctly.</p>
-      <div style={{ padding: "20px", background: "rgba(0,0,0,0.05)", borderRadius: 12, border: "2px solid var(--rule)" }}>
-        <p style={{ fontSize: 14, fontFamily: "'Courier Prime',monospace", color: "#1C1B1F" }}>✓ Algorand tool deployed successfully at {new Date().toLocaleTimeString()}</p>
-      </div>
     </div>
   );
 }
